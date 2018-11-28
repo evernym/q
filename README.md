@@ -1,2 +1,2 @@
 # smtpagent
-an agent that communicates by smtp
+an agent that communicates by smtp.
