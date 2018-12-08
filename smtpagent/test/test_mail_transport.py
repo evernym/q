@@ -5,7 +5,7 @@ import os
 # Tell python that code in the parent folder should be searched
 # when processing import statementss
 sys.path.append('..')
-from transport import *
+from mail_transport import *
 
 class TransportTestCase(unittest.TestCase):
 
@@ -15,6 +15,7 @@ class TransportTestCase(unittest.TestCase):
         self.t = None
 
     def test_receive(self):
+        # Right now, this only passes if the inbox isn't empty.
         self.assertTrue(self.t.receive())
 
 if __name__ == '__main__':
