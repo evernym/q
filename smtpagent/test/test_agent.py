@@ -3,9 +3,9 @@ import unittest, sys
 # Tell python that code in the parent folder should be searched
 # when processing import statementss
 sys.path.append('..')
-from smtpagent import *
+from agent import *
 
-class MyTestCase(unittest.TestCase):
+class AgentTestCase(unittest.TestCase):
 
     def setUp(self):
         self.agent = Agent()
