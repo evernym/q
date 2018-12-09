@@ -7,14 +7,15 @@ import protocols
 
 class FakeTransport:
     def __init__(self):
-        self.queue = []
+        self.rqueue = []
+        self.squeue = []
     def push(self, msg):
-        self.queue.append(msg)
+        self.rqueue.append(msg)
     def pop(self):
-        if self.queue:
-            return self.queue.pop(0)
+        if self.rqueue:
+            return self.rqueue.pop(0)
     def send(self, payload, destination):
-        pass
+        self.squeue.append((payload, destination))
     def receive(self):
         return self.pop()
 
@@ -25,7 +26,8 @@ a = agent.Agent(transport=t)
 class AgentTest(unittest.TestCase):
 
     def setUp(self):
-        t.queue = []
+        t.rqueue = []
+        t.squeue = []
 
     def test_fetch_with_empty_inbox(self):
         self.assertFalse(a.fetch_message())
@@ -37,7 +39,7 @@ class AgentTest(unittest.TestCase):
     def test_process_one_message(self):
         wc = mwc.MessageWithContext('{"@type": "ping"}')
         a.process_message(wc)
-
+        self.assertTrue(t.squeue)
 
 if __name__ == '__main__':
     unittest.main()
