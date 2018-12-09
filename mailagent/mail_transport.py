@@ -3,22 +3,9 @@ import os
 import email
 import imaplib
 import re
+import logging
 
 import agent_common
-
-
-
-
-#import asyncio
-#import time
-import re
-import logging
-#import smtplib
-#from email.mime.multipart import MIMEMultipart
-#from email.mime.text import MIMEText
-#from email.mime.base import MIMEBase
-#from email import encoders
-#from indy import crypto, did, wallet
 
 _default_imap_cfg = {
     'server': 'imap.gmail.com',
@@ -77,7 +64,7 @@ class MailQueue:
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)
     def push(self, bytes):
-        fname = datetime.datetime.now().isoformat() + '.email'
+        fname = datetime.datetime.now().isoformat().replace(':', '-') + '.email'
         path = os.path.join(self.folder, fname)
         with open(path, 'wb') as f:
             f.write(bytes)
