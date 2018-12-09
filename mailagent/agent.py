@@ -1,11 +1,18 @@
-'''An agent that interacts by SMTP.'''
+#!/usr/bin/env python
+
+# '''An agent that interacts by SMTP.'''
+
+import os
+import sys
+import time
+import mail_transport
 
 class Agent():
 
     def __init__(self, cfg=None, transport=None):
         self.cfg = cfg
         if not transport:
-            transport = MailTransport(cfg)
+            transport = mail_transport.MailTransport(cfg)
         self.trans = transport
 
     def process_message(self, msg):
@@ -33,15 +40,16 @@ class Agent():
             except:
                 traceback.print_exc()
 
-def get_cfg_from_cmdline():
+def _get_cfg_from_cmdline():
     import argparse
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Run a Hyperledger Indy agent that communicates by email.")
     parser.add_argument("-s", "--statefolder", default="~/.mailagent", help="folder where state is stored")
     parser.add_argument("-l", "--loglevel", default="WARN", help="min level of messages written to log")
-    parser.parse_args()
+    args = parser.parse_args()
     args.statefolder = os.path.expanduser(args.statefolder)
+    return args
 
-def get_config_from_file():
+def _get_config_from_file():
     import configparser
     cfg = configparser.ConfigParser()
     cfg_path = 'mailagent.cfg'
@@ -49,25 +57,32 @@ def get_config_from_file():
         cfg.read(cfg_path)
     return cfg
 
-def configure():
-    args = get_cfg_from_cmdline()
+def _configure():
+    args = _get_cfg_from_cmdline()
 
     sf = args.statefolder
     if not os.path.exists(sf):
         os.makedirs(sf)
     os.chdir(sf)
 
-    cfg = get_config_from_file()
+    cfg = _get_config_from_file()
+
+    ll = ('DIWEC'.index(args.loglevel[0].upper()) + 1) * 10
+    if ll <= 0:
+        try:
+            ll = int(args.loglevel)
+        except:
+            sys.exit('Unrecognized loglevel %s.' % args.loglevel)
 
     import logging
     logging.basicConfig(
-        filename=os.path.join(test_folder, 'test.log'),
+        filename=os.path.join('mailagent.log'),
         format='%(asctime)s\t%(funcName)s@%(filename)s#%(lineno)s\t%(levelname)s\t%(message)s',
-        level=logging.DEBUG)
+        level=ll)
 
     return cfg
 
 if __name__ == '__main__':
-    cfg = configure()
+    cfg = _configure()
     agent = Agent(cfg)
     agent.run()
