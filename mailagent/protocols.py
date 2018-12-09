@@ -1,13 +1,24 @@
-import os
-import sys
-import logging
+BY_NAME = {}
+BY_TYPE = {}
+BAD = []
 
-import agent_common
+_loaded = False
+def _load():
+    '''
+    Dynamically discover all properly defined protocols, and make each of them callable.
+    '''
+    global _loaded
+    if _loaded:
+        return
 
-HANDLERS = {}
+    _loaded = True
+    import os
+    import sys
+    import logging
 
-def load_all():
-    bad = []
+    import agent_common
+
+    BAD = []
     protocols_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'protocols')
     items = os.listdir(protocols_folder)
     for item in items:
@@ -18,7 +29,7 @@ def load_all():
                 try:
                     import handler as x
                     missing = []
-                    for attr in ['handle']:
+                    for attr in ['handle', 'TYPES']:
                         if not hasattr(x, attr):
                             missing.append(attr)
                     if missing:
@@ -26,11 +37,16 @@ def load_all():
                         bad.append(item)
                     else:
                         logging.info('Loaded %s protocol handler.')
-                        HANDLERS[item] = x
+                        BY_NAME[item] = x
+                        for typ in x.TYPES:
+                            if typ not in BY_TYPE:
+                                BY_TYPE[typ] = []
+                            BY_TYPE[typ].append(x)
                     del x
                 except:
                     agent_common.log_exception('While trying to import %s protocol handler' % item)
-                    bad.append(item)
+                    BAD.append(item)
             finally:
                 sys.path.pop(0)
-    return bad
+
+_load()

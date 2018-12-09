@@ -9,7 +9,7 @@ import time
 
 import agent_common
 import mail_transport
-import protocol_loader
+import protocols
 
 class Agent():
 
@@ -19,14 +19,20 @@ class Agent():
             transport = mail_transport.MailTransport(cfg)
         self.trans = transport
 
-    def process_message(self, mwc):
-        sender_key, plaintext = self.decrypt(msg)
-        if plaintext:
-            typ = plaintext.get_type()
-            if typ == 'ping':
-                self.handle_ping()
-            else:
-                raise Exception('Unkonwn message type %s' % typ)
+    def process_message(self, wc):
+        typ = wc.get_type()
+        if typ:
+            handled = False
+            handlers = protocols.BY_TYPE.get(typ)
+            if handlers:
+                for handler in handlers:
+                    if handler.handle(wc, typ, self):
+                        handled = True
+                        break
+            if not handled:
+                logging.warning('Unhandled message -- unsupported @type %s with %s.' % (typ, wc))
+        else:
+            logging.warning('Unhandled message -- missing @type with %s.' % wc)
 
     def fetch_message(self):
         return self.trans.receive()
@@ -36,9 +42,9 @@ class Agent():
         try:
             while True:
                 try:
-                    wc =self.fetch_message()
-                    if mwc:
-                        self.process_message(mwc)
+                    wc = self.fetch_message()
+                    if wc:
+                        self.process_message(wc)
                     else:
                         time.sleep(30.0)
                 except KeyboardInterrupt:
@@ -86,7 +92,7 @@ def _start_logging(ll):
         level=ll)
 
 def _load_protocols():
-    protocol_loader.load_all()
+    protocols.load()
 
 def _configure():
     args = _get_config_from_cmdline()
@@ -94,7 +100,7 @@ def _configure():
     cfg = _get_config_from_file()
     ll = _get_loglevel(args)
     _start_logging(ll)
-    protocol_loader.load_all()
+    protocols.load()
     return cfg
 
 if __name__ == '__main__':

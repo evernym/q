@@ -1,11 +1,12 @@
 import unittest
 import helpers
-import protocol_loader
+import protocols
 
-class ProtocolTest(unittest.TestCase):
-    def test_all_load(self):
-        bad = protocol_loader.load_all()
-        self.assertFalse(bad)
+class ProtocolsTest(unittest.TestCase):
+    def test_every_protocol_loads(self):
+        self.assertTrue(protocols.BY_TYPE)
+        self.assertTrue(protocols.BY_NAME)
+        self.assertFalse(protocols.BAD)
 
 if __name__ == '__main__':
     unittest.main()

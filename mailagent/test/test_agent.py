@@ -1,6 +1,9 @@
 import unittest
+
 import helpers
 import agent
+import mwc
+import protocols
 
 class FakeTransport:
     def __init__(self):
@@ -18,6 +21,7 @@ class FakeTransport:
 t = FakeTransport()
 a = agent.Agent(transport=t)
 
+
 class AgentTest(unittest.TestCase):
 
     def setUp(self):
@@ -29,6 +33,11 @@ class AgentTest(unittest.TestCase):
     def test_fetch_one_message(self):
         t.push('hello')
         self.assertTrue(a.fetch_message())
+
+    def test_process_one_message(self):
+        wc = mwc.MessageWithContext('{"@type": "ping"}')
+        a.process_message(wc)
+
 
 if __name__ == '__main__':
     unittest.main()

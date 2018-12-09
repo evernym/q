@@ -2,7 +2,12 @@ import re
 
 import mtc
 
-_id_pat = re.compile(r'"@id"\s*:\s*"([^"]+)"', re.S)
+def _make_json_key_value_pat(key):
+    pat_txt = r'"%s"\s*:\s*"([^"]+)"' % key
+    return re.compile(pat_txt, re.S)
+
+_id_pat = _make_json_key_value_pat('@id')
+_type_pat = _make_json_key_value_pat('@type')
 _squeeze_pat = re.compile('\\s*\n[\t ]*')
 
 class MessageWithContext:
@@ -45,6 +50,11 @@ class MessageWithContext:
         if not sender:
             sender = 'nobody'
         return '%s from %s with %s' % (msg_fragment, sender, str(self.tc))
+    def get_type(self):
+        if self.msg:
+            match = _type_pat.search(self.msg)
+            if match:
+                return match.group(1)
 
 '''A special global constant representing degenerate, empty MessageWithContext.'''
 NULL_MWC = MessageWithContext()
