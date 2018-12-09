@@ -47,6 +47,7 @@ class TransportTest(unittest.TestCase):
     def test_bytes_to_a2a_ap_body(self):
         wc =_get_a2a_from_sample_email('ap_body')
         self.assertTrue(wc.msg)
+        self.assertEqual('fred@flintstones.org', wc.sender)
         self.assertFalse(wc.tc)
 
     def test_bytes_to_a2a_jwt_attached(self):

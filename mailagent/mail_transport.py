@@ -136,6 +136,8 @@ def _find_a2a(msg):
             msg.get('from', 'unknown sender'), msg.get('date', 'at unknown time'), msg.get('subject', 'empty')
         ))
 
+    if not wc.sender:
+        wc.sender = msg['from']
     return wc
 
 class MailTransport:
@@ -194,7 +196,7 @@ class MailTransport:
                                 msg_data = _check_imap_ok(m.uid('FETCH', this_id, '(RFC822)'))
                                 raw = msg_data[0][1]
                                 self.queue.push(raw)
-                                wc =MailTransport.bytes_to_a2a_message(raw)
+                                wc = MailTransport.bytes_to_a2a_message(raw)
                                 to_trash.append(this_id)
                                 return wc
                     finally:

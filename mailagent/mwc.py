@@ -9,10 +9,20 @@ class MessageWithContext:
     '''
     Hold a message plus its associated trust context, sender, and other metadata.
     '''
-    def __init__(self, msg:str=None, tc:mtc.MessageTrustContext=None):
+    def __init__(self, msg:str=None, sender:str=None, tc:mtc.MessageTrustContext=None):
+        # Enforce precondition on datatype of sender
+        if sender:
+            assert isinstance(sender, str)
         self.msg = msg
+        self.sender = sender
         if tc is None:
             tc = mtc.MessageTrustContext()
+        # If we have a DID or key as the sender, then we know who sent it with confidence.
+        # TODO: we need to split sender and reply email address apart. They're different
+        # concepts. What we're calling sender here is authenticated_origin. All messages
+        # should have a reply address.
+        if sender and ('@' not in sender):
+            tc.authenticated_origin = True
         self.tc = tc
     def __bool__(self):
         return bool(self.msg)
@@ -31,7 +41,10 @@ class MessageWithContext:
                     msg_fragment = msg_fragment[:37] + '...'
         else:
             msg_fragment = '(empty)'
-        return '%s with %s' % (msg_fragment, str(self.tc))
+        sender = self.sender
+        if not sender:
+            sender = 'nobody'
+        return '%s from %s with %s' % (msg_fragment, sender, str(self.tc))
 
 '''A special global constant representing degenerate, empty MessageWithContext.'''
 NULL_MWC = MessageWithContext()
