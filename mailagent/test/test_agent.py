@@ -1,9 +1,21 @@
 import unittest
 import helpers
 import agent
-import fake_transport
 
-t = fake_transport.FakeTransport()
+class FakeTransport:
+    def __init__(self):
+        self.queue = []
+    def push(self, msg):
+        self.queue.append(msg)
+    def pop(self):
+        if self.queue:
+            return self.queue.pop(0)
+    def send(self, payload, destination):
+        pass
+    def receive(self):
+        return self.pop()
+
+t = FakeTransport()
 a = agent.Agent(transport=t)
 
 class AgentTest(unittest.TestCase):
