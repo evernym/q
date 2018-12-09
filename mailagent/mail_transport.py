@@ -6,6 +6,7 @@ import re
 import logging
 
 import agent_common
+import mtc
 
 _default_imap_cfg = {
     'server': 'imap.gmail.com',
@@ -80,25 +81,96 @@ class MailQueue:
                     os.unlink(path)
                     return bytes
 
+_preferred_ext_pats = [
+    re.compile(r'(?i).*\.aw$'),
+    re.compile(r'(?i).*\.jwt$'),
+    re.compile(r'(?i).*\.ap$'),
+    re.compile(r'(?i).*\.js(on)$')
+]
+_json_content_pat = re.compile(r'(?s)\s*{.*}\s*$')
+
+def _find_a2a(msg):
+    '''
+    Look through an email to find the a2a message it contains. Return a mtc.MessageWithExplicitTrust, which may
+    be empty if nothing is found.
+
+    Email messages are potentially very complex (multipart within multipart within multipart), with attachments
+    and alternate versions of the same content (e.g., plain text vs. html). This method prefers to find an
+    Agent Wire message (*.aw or *.jwt) as an attachment. Failing that, it looks for an Agent Plaintext
+    message (*.ap or *.json or *.js) as an attachment. Failing that, it looks for an Agent Plaintext msg
+    as a message body.
+    '''
+    best_part_ext_idx = 100
+    best_part = None
+    mwet = mtc.MessageWithExplicitTrust()
+    for part in msg.walk():
+        if not part.is_multipart():
+            fname = part.get_filename()
+            if fname:
+                # Look at file extension. If it's one that we can handle,
+                # see if it's the best attachment we've seen so far.
+                for i in range(len(_preferred_ext_pats)):
+                    pat = _preferred_ext_pats[i]
+                    if pat.match(fname):
+                        if i < best_part_ext_idx:
+                            best_part = part
+                            best_part_ext_idx = i
+                            if i == 0:
+                                # Stop: we found an attachment that was our top preference.
+                                break
+            elif (not mwet) and (part.get_content_type() == 'text/plain'):
+                this_txt = part.get_payload()
+                if _json_content_pat.match(this_txt):
+                    mwet.msg = this_txt
+
+    if best_part:
+        mwet.msg = best_part.get_payload()
+        if best_part_ext_idx < 2:
+            mwet.tc = mtc.MessageTrustContext(True, True, False, True)
+    elif mwet.msg:
+       mwet.tc = mtc.MessageTrustContext()
+    else:
+        logging.error('No useful a2a message found in email. From: %s; Date: %s; Subject: %s.' % (
+            msg.get('from', 'unknown sender'), msg.get('date', 'at unknown time'), msg.get('subject', 'empty')
+        ))
+
+    return mwet
+
 class MailTransport:
+
+    @staticmethod
+    def bytes_to_a2a_message(bytes):
+        '''
+        Look through an email to find the a2a message it contains. Return a mtc.MessageWithExplicitTrust, which may
+        be empty if nothing is found.
+        '''
+        try:
+            emsg = email.message_from_bytes(bytes)
+            mwet = _find_a2a(emsg)
+            return mwet
+        except:
+            agent_common.log_exception()
+        return mtc.MessageWithExplicitTrust()
 
     def __init__(self, cfg=None, queue=None):
         self.imap_cfg = _apply_cfg(cfg, 'imap', _default_imap_cfg)
         self.smtp_cfg = _apply_cfg(cfg, 'smtp', _default_smtp_cfg)
         if queue is None:
             queue = MailQueue()
-        self.queue = MailQueue()
+        self.queue = queue
 
     def send(self, payload, destination):
         pass
 
     def receive(self):
-        '''Get the next message from our inbox and return it. If no messages are currently available,
-        return None.'''
+        '''
+        Get the next message from our inbox and return it as a Return a mtc.MessageWithExplicitTrust, which may
+        be empty if nothing is found.
+        '''
 
         bytes = self.queue.pop()
         if bytes:
-            return email.message_from_bytes(bytes)
+            return MailTransport.bytes_to_a2a_message(bytes)
 
         svr = self.imap_cfg['server']
         try:
@@ -120,9 +192,9 @@ class MailTransport:
                                 msg_data = _check_imap_ok(m.uid('FETCH', this_id, '(RFC822)'))
                                 raw = msg_data[0][1]
                                 self.queue.push(raw)
-                                msg = email.message_from_bytes(raw)
+                                mwet = MailTransport.bytes_to_a2a_message(raw)
                                 to_trash.append(this_id)
-                                return msg
+                                return mwet
                     finally:
                         if to_trash:
                             for id in to_trash:
@@ -133,3 +205,4 @@ class MailTransport:
             raise
         except:
             agent_common.log_exception()
+        return mtc.MessageWithExplicitTrust()

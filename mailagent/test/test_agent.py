@@ -6,7 +6,7 @@ import fake_transport
 t = fake_transport.FakeTransport()
 a = agent.Agent(transport=t)
 
-class AgentTestCase(unittest.TestCase):
+class AgentTest(unittest.TestCase):
 
     def setUp(self):
         t.queue = []
