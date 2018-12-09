@@ -3,12 +3,14 @@ import unittest, sys
 # Tell python that code in the parent folder should be searched
 # when processing import statementss
 sys.path.append('..')
-from agent import *
+from agent import Agent
+from fake_transport import FakeTransport
 
 class AgentTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.agent = Agent()
+        t = FakeTransport()
+        self.agent = Agent(transport=t)
     def tearDown(self):
         self.agent = None
 
