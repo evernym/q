@@ -1,2 +1,2 @@
-# smtpagent
-an agent that communicates by smtp.
+# mailagent
+An indy agent that communicates by smtp and imap.
