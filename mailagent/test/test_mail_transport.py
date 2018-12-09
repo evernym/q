@@ -30,20 +30,49 @@ class QueueTest(unittest.TestCase):
         self.assertTrue(self.q.pop())
         self.assertFalse(self.q.pop())
 
+def _get_sample_email(which):
+    fname = os.path.join(data_files_folder, which + '.email')
+    with open(fname, 'rb') as f:
+        return f.read()
+
+def _get_sample_email_tweaked(which, search_for, replace_with):
+    return _get_sample_email(which).decode('utf-8').replace(search_for, replace_with).encode('utf-8')
+
+def _get_a2a_from_sample_email(which):
+    raw = _get_sample_email(which)
+    return mail_transport.MailTransport.bytes_to_a2a_message(raw)
+
 class TransportTest(unittest.TestCase):
 
     def test_bytes_to_a2a_ap_body(self):
-        fname = os.path.join(data_files_folder, 'ap_body.email')
-        with open(fname, 'rb') as f:
-            raw = f.read()
+        mwet = _get_a2a_from_sample_email('ap_body')
+        self.assertTrue(mwet.msg)
+        self.assertFalse(mwet.tc)
+
+    def test_bytes_to_a2a_jwt_attached(self):
+        raw = _get_sample_email_tweaked('aw_attached', 'tiny.aw', 'tiny.jwt')
+        mwet = mail_transport.MailTransport.bytes_to_a2a_message(raw)
+        self.assertTrue(mwet.msg)
+        self.assertTrue('confidentiality, integrity' in str(mwet.tc))
+
+    def test_bytes_to_a2a_aw_attached(self):
+        mwet = _get_a2a_from_sample_email('aw_attached')
+        self.assertTrue(mwet.msg)
+        self.assertTrue('confidentiality, integrity' in str(mwet.tc))
+
+    def test_bytes_to_a2a_ap_attached(self):
+        mwet = _get_a2a_from_sample_email('ap_attached')
+        self.assertTrue(mwet.msg)
+        self.assertFalse(mwet.tc)
+
+    def test_bytes_to_a2a_json_attached(self):
+        raw = _get_sample_email_tweaked('ap_attached', 'sample.ap', 'sample.json')
         mwet = mail_transport.MailTransport.bytes_to_a2a_message(raw)
         self.assertTrue(mwet.msg)
         self.assertFalse(mwet.tc)
 
     def test_receive_from_local_queue(self):
-        fname = os.path.join(data_files_folder, 'ap_body.email')
-        with open(fname, 'rb') as f:
-            t.queue.push(f.read())
+        t.queue.push(_get_sample_email('ap_body'))
         self.assertTrue(t.receive())
 
     def test_receive_over_imap(self):

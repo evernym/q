@@ -85,7 +85,7 @@ _preferred_ext_pats = [
     re.compile(r'(?i).*\.aw$'),
     re.compile(r'(?i).*\.jwt$'),
     re.compile(r'(?i).*\.ap$'),
-    re.compile(r'(?i).*\.js(on)$')
+    re.compile(r'(?i).*\.json$')
 ]
 _json_content_pat = re.compile(r'(?s)\s*{.*}\s*$')
 
@@ -126,7 +126,8 @@ def _find_a2a(msg):
     if best_part:
         mwet.msg = best_part.get_payload()
         if best_part_ext_idx < 2:
-            mwet.tc = mtc.MessageTrustContext(True, True, False, True)
+            # TODO: decrypt and then, if authcrypted, add authenticated_origin in
+            mwet.tc = mtc.MessageTrustContext(confidentiality=True, integrity=True)
     elif mwet.msg:
        mwet.tc = mtc.MessageTrustContext()
     else:
