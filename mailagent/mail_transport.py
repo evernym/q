@@ -1,4 +1,11 @@
-import os, imaplib, re, traceback, sys, email
+import datetime
+import os
+import email
+import imaplib
+import re
+
+import agent_common
+
 
 
 
@@ -60,11 +67,36 @@ def _describe_imap_error(returned):
 
 _true_pat = re.compile('(?i)-?1|t(rue)?|y(es)?|on')
 
+class MailQueue:
+    def __init__(self, folder='queue'):
+        self.folder = folder
+        if not os.path.exists(self.folder):
+            os.makedirs(self.folder)
+    def push(self, bytes):
+        fname = datetime.datetime.now().isoformat() + '.email'
+        path = os.path.join(self.folder, fname)
+        with open(path, 'wb') as f:
+            f.write(bytes)
+    def pop(self):
+        items = os.listdir(self.folder)
+        if items:
+            items.sort()
+            for item in items:
+                path = os.path.join(self.folder, item)
+                if path.endswith('.email') and os.path.isfile(path):
+                    with open(path, 'rb') as f:
+                        bytes = f.read()
+                    os.unlink(path)
+                    return bytes
+
 class MailTransport:
 
-    def __init__(self, cfg=None):
+    def __init__(self, cfg=None, queue=None):
         self.imap_cfg = _apply_cfg(cfg, 'imap', _default_imap_cfg)
         self.smtp_cfg = _apply_cfg(cfg, 'smtp', _default_smtp_cfg)
+        if queue is None:
+            queue = MailQueue()
+        self.queue = MailQueue()
 
     def send(self, payload, destination):
         pass
@@ -72,6 +104,10 @@ class MailTransport:
     def receive(self):
         '''Get the next message from our inbox and return it. If no messages are currently available,
         return None.'''
+
+        bytes = self.queue.pop()
+        if bytes:
+            return email.message_from_bytes(bytes)
 
         svr = self.imap_cfg['server']
         try:
@@ -91,7 +127,9 @@ class MailTransport:
                             this_id = message_ids[i]
                             if this_id:
                                 msg_data = _check_imap_ok(m.uid('FETCH', this_id, '(RFC822)'))
-                                msg = email.message_from_bytes(msg_data[0][1])
+                                raw = msg_data[0][1]
+                                self.save_to_inbox(raw)
+                                msg = email.message_from_bytes(raw)
                                 to_trash.append(this_id)
                                 return msg
                     finally:
@@ -99,12 +137,6 @@ class MailTransport:
                             for id in to_trash:
                                 m.uid('MOVE', id, '[Gmail]/Trash')
                         m.close()
-                logging.info('got inside')
 
         except:
-            typ, text, trace = sys.exc_info()
-            frame = traceback.extract_tb(trace, 1)[0]
-            text = str(text)
-            if text[-1].isalpha():
-                text += '.'
-            logging.error("%s at %s#%s: %s Code was: %s" % (typ.__name__, frame.filename, frame.lineno, text, frame.line.strip()))
+            agent_common.log_exception()

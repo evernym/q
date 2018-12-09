@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 
-# '''An agent that interacts by SMTP.'''
+# '''A SSI agent that interacts by email.'''
 
+import logging
 import os
 import sys
 import time
+
+import agent_common
 import mail_transport
 
 class Agent():
@@ -28,25 +31,29 @@ class Agent():
         return self.trans.receive()
 
     def run(self):
-        while True:
-            try:
-                msg = self.fetch_message()
-                if msg:
-                    self.process_message(msg)
-                else:
-                    time.sleep(1000)
-            except KeyboardInterrupt:
-                sys.exit(0)
-            except:
-                traceback.print_exc()
+        logging.info('Agent started.')
+        try:
+            while True:
+                try:
+                    msg = self.fetch_message()
+                    if msg:
+                        self.process_message(msg)
+                    else:
+                        time.sleep(1.0)
+                except KeyboardInterrupt:
+                    sys.exit(0)
+                except:
+                    agent_common.log_exception()
+        finally:
+            logging.info('Agent stopped.')
 
-def _get_cfg_from_cmdline():
+def _get_config_from_cmdline():
     import argparse
     parser = argparse.ArgumentParser(description="Run a Hyperledger Indy agent that communicates by email.")
-    parser.add_argument("-s", "--statefolder", default="~/.mailagent", help="folder where state is stored")
-    parser.add_argument("-l", "--loglevel", default="WARN", help="min level of messages written to log")
+    parser.add_argument("--sf", metavar='FOLDER', default="~/.mailagent", help="folder where state is stored (default=~/.mailagent)")
+    parser.add_argument("--ll", metavar='LVL', default="INFO", help="log level (default=INFO)")
     args = parser.parse_args()
-    args.statefolder = os.path.expanduser(args.statefolder)
+    args.sf = os.path.expanduser(args.sf)
     return args
 
 def _get_config_from_file():
@@ -57,29 +64,32 @@ def _get_config_from_file():
         cfg.read(cfg_path)
     return cfg
 
-def _configure():
-    args = _get_cfg_from_cmdline()
+def _use_statefolder(args):
+    if not os.path.exists(args.sf):
+        os.makedirs(args.sf)
+    os.chdir(args.sf)
 
-    sf = args.statefolder
-    if not os.path.exists(sf):
-        os.makedirs(sf)
-    os.chdir(sf)
-
-    cfg = _get_config_from_file()
-
-    ll = ('DIWEC'.index(args.loglevel[0].upper()) + 1) * 10
+def _get_loglevel(args):
+    ll = ('DIWEC'.index(args.ll[0].upper()) + 1) * 10
     if ll <= 0:
         try:
             ll = int(args.loglevel)
         except:
             sys.exit('Unrecognized loglevel %s.' % args.loglevel)
+    return ll
 
-    import logging
+def _start_logging(ll):
     logging.basicConfig(
-        filename=os.path.join('mailagent.log'),
+        filename='mailagent.log',
         format='%(asctime)s\t%(funcName)s@%(filename)s#%(lineno)s\t%(levelname)s\t%(message)s',
         level=ll)
 
+def _configure():
+    args = _get_config_from_cmdline()
+    _use_statefolder(args)
+    cfg = _get_config_from_file()
+    ll = _get_loglevel(args)
+    _start_logging(ll)
     return cfg
 
 if __name__ == '__main__':
