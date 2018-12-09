@@ -1,21 +1,22 @@
-import unittest, sys
+import unittest
+import helpers
+import agent
+import fake_transport
 
-# Tell python that code in the parent folder should be searched
-# when processing import statementss
-sys.path.append('..')
-from agent import Agent
-from fake_transport import FakeTransport
+t = fake_transport.FakeTransport()
+a = agent.Agent(transport=t)
 
 class AgentTestCase(unittest.TestCase):
 
     def setUp(self):
-        t = FakeTransport()
-        self.agent = Agent(transport=t)
-    def tearDown(self):
-        self.agent = None
+        t.queue = []
 
-    def test_fetch_message_with_empty_inbox_yields_None(self):
-        self.assertTrue(self.agent.fetch_message() is None)
+    def test_fetch_with_empty_inbox(self):
+        self.assertFalse(a.fetch_message())
+
+    def test_fetch_one_message(self):
+        t.push('hello')
+        self.assertTrue(a.fetch_message())
 
 if __name__ == '__main__':
     unittest.main()

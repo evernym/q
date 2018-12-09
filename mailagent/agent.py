@@ -18,10 +18,7 @@ class Agent():
                 raise Exception('Unkonwn message type %s' % typ)
 
     def fetch_message(self):
-        # Put some code here that checks our inbox. If we have
-        # something, return topmost (oldest) item. If not, return
-        # None.
-        return None
+        return self.trans.receive()
 
     def run(self):
         while True:
@@ -61,6 +58,13 @@ def configure():
     os.chdir(sf)
 
     cfg = get_config_from_file()
+
+    import logging
+    logging.basicConfig(
+        filename=os.path.join(test_folder, 'test.log'),
+        format='%(asctime)s\t%(funcName)s@%(filename)s#%(lineno)s\t%(levelname)s\t%(message)s',
+        level=logging.DEBUG)
+
     return cfg
 
 if __name__ == '__main__':

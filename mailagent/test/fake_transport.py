@@ -4,7 +4,7 @@ class FakeTransport:
         self.queue = []
 
     def push(self, msg):
-        self.queue.push(msg)
+        self.queue.append(msg)
 
     def pop(self):
         if self.queue:
