@@ -68,6 +68,10 @@ def _describe_imap_error(returned):
 _true_pat = re.compile('(?i)-?1|t(rue)?|y(es)?|on')
 
 class MailQueue:
+    '''
+    Allow messages to be downloaded from remote imap server and cached locally, then
+    fetched and processed in the order retrieved.
+    '''
     def __init__(self, folder='queue'):
         self.folder = folder
         if not os.path.exists(self.folder):
@@ -128,7 +132,7 @@ class MailTransport:
                             if this_id:
                                 msg_data = _check_imap_ok(m.uid('FETCH', this_id, '(RFC822)'))
                                 raw = msg_data[0][1]
-                                self.save_to_inbox(raw)
+                                self.queue.push(raw)
                                 msg = email.message_from_bytes(raw)
                                 to_trash.append(this_id)
                                 return msg
@@ -138,5 +142,7 @@ class MailTransport:
                                 m.uid('MOVE', id, '[Gmail]/Trash')
                         m.close()
 
+        except KeyboardInterrupt:
+            raise
         except:
             agent_common.log_exception()
