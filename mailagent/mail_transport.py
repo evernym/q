@@ -4,6 +4,11 @@ import email
 import imaplib
 import re
 import logging
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 
 import agent_common
 import mtc
@@ -140,6 +145,7 @@ def _find_a2a(msg):
         wc.sender = msg['from']
     return wc
 
+
 class MailTransport:
 
     @staticmethod
@@ -163,8 +169,22 @@ class MailTransport:
             queue = MailQueue()
         self.queue = queue
 
-    def send(self, payload, destination):
-        pass
+    def send(self, payload, dest):
+        m = MIMEMultipart()
+        m['From'] = "indyagent1@gmail.com" #TODO: get from config
+        m['To'] = dest
+        m['Subject'] = "a2a message"
+        m.attach(MIMEText('See attached file.', 'plain'))
+        p = MIMEBase('application', 'octet-stream')
+        p.set_payload(payload)
+        encoders.encode_base64(p)
+        p.add_header('Content-Disposition', "attachment; filename=msg.ap")
+        m.attach(p)
+        s = smtplib.SMTP('smtp.gmail.com', 587)
+        s.starttls()
+        s.login('indyagent1@gmail.com', 'I 0nly talk via email!')
+        s.sendmail('indyagent1@gmail.com', dest, m.as_string())
+        s.quit()
 
     def receive(self):
         '''

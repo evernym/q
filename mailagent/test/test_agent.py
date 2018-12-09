@@ -22,7 +22,6 @@ class FakeTransport:
 t = FakeTransport()
 a = agent.Agent(transport=t)
 
-
 class AgentTest(unittest.TestCase):
 
     def setUp(self):

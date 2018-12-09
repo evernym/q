@@ -80,5 +80,9 @@ class TransportTest(unittest.TestCase):
         # Right now, this only passes if the inbox isn't empty.
         pass #self.assertTrue(t.receive())
 
+    def test_send(self):
+        # Right now, this only passes if we have an internet connection.
+        pass #t.send('this is a test', 'daniel.hardman@gmail.com')
+
 if __name__ == '__main__':
     unittest.main()
