@@ -43,7 +43,7 @@ ZERO_TRUST = MessageTrustContext()
 
 _id_pat = re.compile(r'"@id"\s*:\s*"([^"]+)"', re.S)
 _squeeze_pat = re.compile('\\s*\n[\t ]*')
-class MessageWithExplicitTrust:
+class MessageWithContext:
     '''
     Hold a message plus its associated trust context.
     '''
@@ -69,5 +69,5 @@ class MessageWithExplicitTrust:
             msg_fragment = '(empty)'
         return '%s with %s' % (msg_fragment, str(self.tc))
 
-'''A special global constant representing degenerate, empty MessageWithExplicitTrust.'''
-NULL_MWET = MessageWithExplicitTrust()
+'''A special global constant representing degenerate, empty MessageWithContext.'''
+NULL_wc =MessageWithContext()

@@ -9,6 +9,7 @@ import time
 
 import agent_common
 import mail_transport
+import protocol_loader
 
 class Agent():
 
@@ -18,7 +19,7 @@ class Agent():
             transport = mail_transport.MailTransport(cfg)
         self.trans = transport
 
-    def process_message(self, msg):
+    def process_message(self, mwc):
         sender_key, plaintext = self.decrypt(msg)
         if plaintext:
             typ = plaintext.get_type()
@@ -35,11 +36,11 @@ class Agent():
         try:
             while True:
                 try:
-                    msg = self.fetch_message()
-                    if msg:
-                        self.process_message(msg)
+                    wc =self.fetch_message()
+                    if mwc:
+                        self.process_message(mwc)
                     else:
-                        time.sleep(1.0)
+                        time.sleep(30.0)
                 except KeyboardInterrupt:
                     sys.exit(0)
                 except:
@@ -84,12 +85,16 @@ def _start_logging(ll):
         format='%(asctime)s\t%(funcName)s@%(filename)s#%(lineno)s\t%(levelname)s\t%(message)s',
         level=ll)
 
+def _load_protocols():
+    protocol_loader.load_all()
+
 def _configure():
     args = _get_config_from_cmdline()
     _use_statefolder(args)
     cfg = _get_config_from_file()
     ll = _get_loglevel(args)
     _start_logging(ll)
+    protocol_loader.load_all()
     return cfg
 
 if __name__ == '__main__':

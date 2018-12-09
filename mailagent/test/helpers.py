@@ -12,7 +12,10 @@ if root_module_folder not in sys.path:
 
     # Make sure the logging code inside our various modules writes to test.log
     import logging
+    test_log_path = os.path.join(test_folder, 'test.log')
+    if os.path.isfile(test_log_path):
+        os.unlink(test_log_path)
     logging.basicConfig(
-        filename=os.path.join(test_folder, 'test.log'),
+        filename=test_log_path,
         format='%(asctime)s\t%(funcName)s@%(filename)s#%(lineno)s\t%(levelname)s\t%(message)s',
         level=logging.DEBUG)

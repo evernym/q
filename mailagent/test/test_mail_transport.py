@@ -45,31 +45,31 @@ def _get_a2a_from_sample_email(which):
 class TransportTest(unittest.TestCase):
 
     def test_bytes_to_a2a_ap_body(self):
-        mwet = _get_a2a_from_sample_email('ap_body')
-        self.assertTrue(mwet.msg)
-        self.assertFalse(mwet.tc)
+        wc =_get_a2a_from_sample_email('ap_body')
+        self.assertTrue(wc.msg)
+        self.assertFalse(wc.tc)
 
     def test_bytes_to_a2a_jwt_attached(self):
         raw = _get_sample_email_tweaked('aw_attached', 'tiny.aw', 'tiny.jwt')
-        mwet = mail_transport.MailTransport.bytes_to_a2a_message(raw)
-        self.assertTrue(mwet.msg)
-        self.assertTrue('confidentiality, integrity' in str(mwet.tc))
+        wc = mail_transport.MailTransport.bytes_to_a2a_message(raw)
+        self.assertTrue(wc.msg)
+        self.assertTrue('confidentiality, integrity' in str(wc.tc))
 
     def test_bytes_to_a2a_aw_attached(self):
-        mwet = _get_a2a_from_sample_email('aw_attached')
-        self.assertTrue(mwet.msg)
-        self.assertTrue('confidentiality, integrity' in str(mwet.tc))
+        wc =_get_a2a_from_sample_email('aw_attached')
+        self.assertTrue(wc.msg)
+        self.assertTrue('confidentiality, integrity' in str(wc.tc))
 
     def test_bytes_to_a2a_ap_attached(self):
-        mwet = _get_a2a_from_sample_email('ap_attached')
-        self.assertTrue(mwet.msg)
-        self.assertFalse(mwet.tc)
+        wc =_get_a2a_from_sample_email('ap_attached')
+        self.assertTrue(wc.msg)
+        self.assertFalse(wc.tc)
 
     def test_bytes_to_a2a_json_attached(self):
         raw = _get_sample_email_tweaked('ap_attached', 'sample.ap', 'sample.json')
-        mwet = mail_transport.MailTransport.bytes_to_a2a_message(raw)
-        self.assertTrue(mwet.msg)
-        self.assertFalse(mwet.tc)
+        wc =mail_transport.MailTransport.bytes_to_a2a_message(raw)
+        self.assertTrue(wc.msg)
+        self.assertFalse(wc.tc)
 
     def test_receive_from_local_queue(self):
         t.queue.push(_get_sample_email('ap_body'))
