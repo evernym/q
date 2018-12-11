@@ -92,6 +92,13 @@ class GameTest(unittest.TestCase):
         for bad in bad_players:
             with self.assertRaises(ValueError):
                 game.other_player(bad)
+    def test_load_and_dump(self):
+        moves = 'X:B2,O:C3,X:B1,O:B3,X:A3'.split(',')
+        self.game.load(moves)
+        dumped = self.game.dump()
+        self.assertEqual(len(dumped), len(moves))
+        for m in moves:
+            self.assertTrue(m in dumped)
 
 class AITest(unittest.TestCase):
     def test_line_winnable(self):
@@ -134,7 +141,6 @@ class AITest(unittest.TestCase):
                 if n == 9:
                     break
                 player = game.other_player(player)
-
 
 if __name__ == '__main__':
     unittest.main()

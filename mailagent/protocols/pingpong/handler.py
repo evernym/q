@@ -6,7 +6,8 @@ TYPES = [
     PONG_MSG_TYPE,
 ]
 
-def handle(mwc, typ, agent):
-    if typ == PING_MSG_TYPE:
-        agent.trans.send('{"@type": "%s"}' % PONG_MSG_TYPE, mwc.sender)
+def handle(wc, agent):
+    t = wc.obj['@type']
+    if t == PING_MSG_TYPE:
+        agent.trans.send('{"@type": "%s"}' % PONG_MSG_TYPE, wc.sender)
     return False

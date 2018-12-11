@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 import time
+import json
 
 import agent_common
 import mail_transport
@@ -20,13 +21,14 @@ class Agent():
         self.trans = transport
 
     def process_message(self, wc):
-        typ = wc.get_type()
+        wc.obj = json.loads(wc.msg)
+        typ = wc.obj['@type']
         if typ:
             handled = False
             handlers = protocols.BY_TYPE.get(typ)
             if handlers:
                 for handler in handlers:
-                    if handler.handle(wc, typ, self):
+                    if handler.handle(wc, self):
                         handled = True
                         break
             if not handled:

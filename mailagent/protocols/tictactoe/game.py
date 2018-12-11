@@ -1,3 +1,7 @@
+import re
+
+_move_split_pat = re.compile(r'\s*,\s*|\s*')
+
 def key_to_idx(key):
     bad_key = (not isinstance(key, str)) or len(key) != 2
     if not bad_key:
@@ -79,10 +83,36 @@ class Game:
                 s += '\n'
         return s
     def winner(self):
+        '''
+        Search for a winner. Return None if game isn't over, "X" if player X won,
+        "O" if player O won, and the empty string if it's a draw.
+        '''
+        draw = True
         for line in LINES:
-            first = self.cells[line[0]]
-            if first and self.cells[line[1]] == first and self.cells[line[2]] == first:
-                return first
+            c1 = self.cells[line[0]]
+            if c1:
+                c2 = self.cells[line[1]]
+                c3 = self.cells[line[2]]
+                if c1 == c2 and c1 == c3:
+                    return c1
+                if (not c2) or (not c3):
+                    draw = False
+            else:
+                draw = False
+        if draw:
+            return ''
+    def load(self, moves):
+        '''Load an array of moves like "X:A1" into a game.'''
+        for m in moves:
+            self[m[2:]] = m[0]
+    def dump(self):
+        '''Convert a game into an array of moves like "X:A1".'''
+        moves = []
+        for i in range(9):
+            c = self.cells[i]
+            if c:
+                moves.append('%s:%s' % (c, idx_to_key(i)))
+        return moves
 
 if __name__ == '__main__':
     import random
