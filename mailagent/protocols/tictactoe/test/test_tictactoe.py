@@ -3,8 +3,7 @@ import sys
 import os
 import random
 
-import helpers
-sys.path.append(os.path.join(helpers.root_module_folder, 'protocols/tictactoe'))
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 import game
 import ai
 
