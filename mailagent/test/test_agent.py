@@ -36,7 +36,7 @@ class AgentTest(unittest.TestCase):
         self.assertTrue(a.fetch_message())
 
     def test_process_one_message(self):
-        wc = mwc.MessageWithContext('{"@type": "ping"}')
+        wc = mwc.MessageWithContext('{"@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/trust_ping/1.0/ping"}')
         a.process_message(wc)
         self.assertTrue(t.squeue)
 
