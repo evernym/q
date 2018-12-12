@@ -3,7 +3,7 @@ import unittest
 import helpers
 import agent
 import mwc
-import protocols
+import protocols.trust_ping.handler as h
 
 class FakeTransport:
     def __init__(self):
@@ -35,11 +35,20 @@ class AgentTest(unittest.TestCase):
         t.push('hello')
         self.assertTrue(a.fetch_message())
 
-    def test_process_one_message(self):
-        wc = mwc.MessageWithContext('{"@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/trust_ping/1.0/ping"}')
-        a.process_message(wc)
+    def test_ping_response(self):
+        wc = mwc.MessageWithContext('{"@type": "%s", "@id": "x"}' % h.PING_MSG_TYPE)
+        self.assertTrue(a.process_message(wc))
         self.assertTrue(t.squeue)
-        to_send = t.squeue.pop(0)
+        to_send = t.squeue.pop(0)[0]
+        for item in ['@thread', '@timing', 'in_time', 'out_time', 'thid']:
+            self.assertTrue(to_send.index(item) > -1)
+
+    def test_ping_no_response(self):
+        wc = mwc.MessageWithContext('{"@type": "%s", "response_requested": false}' % h.PING_MSG_TYPE)
+        # We should claim message is handled
+        self.assertTrue(a.process_message(wc))
+        # We shouldn't have anything to send, since we were asked not to respond.
+        self.assertFalse(t.squeue)
 
 if __name__ == '__main__':
     unittest.main()

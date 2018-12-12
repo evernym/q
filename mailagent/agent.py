@@ -10,7 +10,7 @@ import json
 
 import agent_common
 import mail_transport
-import protocols
+import protoplugins
 
 class Agent():
 
@@ -21,11 +21,11 @@ class Agent():
         self.trans = transport
 
     def process_message(self, wc):
+        handled = False
         wc.obj = json.loads(wc.msg)
         typ = wc.obj['@type']
         if typ:
-            handled = False
-            handlers = protocols.BY_TYPE.get(typ)
+            handlers = protoplugins.BY_TYPE.get(typ)
             if handlers:
                 for handler in handlers:
                     if handler.handle(wc, self):
@@ -35,6 +35,7 @@ class Agent():
                 logging.warning('Unhandled message -- unsupported @type %s with %s.' % (typ, wc))
         else:
             logging.warning('Unhandled message -- missing @type with %s.' % wc)
+        return handled
 
     def fetch_message(self):
         return self.trans.receive()
@@ -94,7 +95,7 @@ def _start_logging(ll):
         level=ll)
 
 def _load_protocols():
-    protocols.load()
+    protoplugins.load()
 
 def _configure():
     args = _get_config_from_cmdline()
@@ -102,7 +103,7 @@ def _configure():
     cfg = _get_config_from_file()
     ll = _get_loglevel(args)
     _start_logging(ll)
-    protocols.load()
+    protoplugins.load()
     return cfg
 
 if __name__ == '__main__':
