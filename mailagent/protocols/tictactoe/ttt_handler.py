@@ -11,8 +11,13 @@ TYPES = [
     RESULTS_MSG_TYPE
 ]
 
-def load_game(moves):
-
+MOVE_MSG_TEMPLATE = \
+'''{
+    "@type": "%s",
+    "@id": "%%s",
+    "ill_be": "X",
+    "moves": ["X:B2"]
+}''' % MOVE_MSG_TYPE
 
 def handle(wc, agent):
     try:
@@ -32,8 +37,6 @@ def handle(wc, agent):
             if w:
                 agent.trans.send('{"@type": "result", "outcome": "%s won."}')
             me = game.other_player(them)
-            if g.whose_turn()
-
             if them == 'X':
                 g.load(wc.obj['moves'])
                 choice = ai.next_move(g, me)

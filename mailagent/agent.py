@@ -10,7 +10,7 @@ import json
 
 import agent_common
 import mail_transport
-import protoplugins
+import plugins
 
 class Agent():
 
@@ -20,12 +20,12 @@ class Agent():
             transport = mail_transport.MailTransport(cfg)
         self.trans = transport
 
-    def process_message(self, wc):
+    def handle_msg(self, wc):
         handled = False
         wc.obj = json.loads(wc.msg)
         typ = wc.obj['@type']
         if typ:
-            handlers = protoplugins.BY_TYPE.get(typ)
+            handlers = plugins.BY_TYPE.get(typ)
             if handlers:
                 for handler in handlers:
                     if handler.handle(wc, self):
@@ -37,7 +37,7 @@ class Agent():
             logging.warning('Unhandled message -- missing @type with %s.' % wc)
         return handled
 
-    def fetch_message(self):
+    def fetch_msg(self):
         return self.trans.receive()
 
     def run(self):
@@ -45,9 +45,9 @@ class Agent():
         try:
             while True:
                 try:
-                    wc = self.fetch_message()
+                    wc = self.fetch_msg()
                     if wc:
-                        self.process_message(wc)
+                        self.handle_msg(wc)
                     else:
                         time.sleep(30.0)
                 except KeyboardInterrupt:
@@ -94,8 +94,8 @@ def _start_logging(ll):
         format='%(asctime)s\t%(funcName)s@%(filename)s#%(lineno)s\t%(levelname)s\t%(message)s',
         level=ll)
 
-def _load_protocols():
-    protoplugins.load()
+def _load_plugins():
+    plugins.load()
 
 def _configure():
     args = _get_config_from_cmdline()
@@ -103,7 +103,7 @@ def _configure():
     cfg = _get_config_from_file()
     ll = _get_loglevel(args)
     _start_logging(ll)
-    protoplugins.load()
+    plugins.load()
     return cfg
 
 if __name__ == '__main__':

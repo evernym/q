@@ -23,11 +23,19 @@ def _load():
     items = os.listdir(protocols_folder)
     for item in items:
         path = os.path.join(protocols_folder, item)
-        if os.path.isdir(path) and os.path.isfile(os.path.join(path, 'handler.py')):
+        if os.path.isdir(path):
+            handler_fname = None
+            subitems = os.listdir(path)
+            for subitem in subitems:
+                if subitem.endswith('_handler.py'):
+                    handler_fname = subitem
+                    break
+            if not handler_fname:
+                continue
             sys.path.insert(0, path)
             try:
                 try:
-                    import handler as x
+                    x = __import__(handler_fname[:-3], [])
                     missing = []
                     for attr in ['handle', 'TYPES']:
                         if not hasattr(x, attr):
@@ -42,7 +50,6 @@ def _load():
                             if typ not in BY_TYPE:
                                 BY_TYPE[typ] = []
                             BY_TYPE[typ].append(x)
-                    del x
                 except:
                     agent_common.log_exception('While trying to import %s protocol handler' % item)
                     BAD.append(item)
