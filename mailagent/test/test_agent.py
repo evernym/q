@@ -39,6 +39,7 @@ class AgentTest(unittest.TestCase):
         wc = mwc.MessageWithContext('{"@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/trust_ping/1.0/ping"}')
         a.process_message(wc)
         self.assertTrue(t.squeue)
+        to_send = t.squeue.pop(0)
 
 if __name__ == '__main__':
     unittest.main()
