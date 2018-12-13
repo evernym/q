@@ -13,6 +13,9 @@ from email import encoders
 import agent_common
 import mtc
 import mwc
+import handler_common
+
+_subject_redundant_prefix_pat = re.compile('(i?)(re|fwd):.*')
 
 _default_imap_cfg = {
     'server': 'imap.gmail.com',
@@ -93,7 +96,17 @@ _preferred_ext_pats = [
     re.compile(r'(?i).*\.ap$'),
     re.compile(r'(?i).*\.json$')
 ]
-_json_content_pat = re.compile(r'(?s)\s*{.*}\s*$')
+_json_content_pat = re.compile(r'(?s)\s*({.*})')
+
+_bad_msgs_folder = 'bad_msgs'
+def _save_bad_msg(msg):
+    if not os.path.isdir(bad_msgs_folder):
+        os.makedirs(bad_msgs_folder)
+    fname = os.path.join(bad_msgs_folder,
+        datetime.datetime.now().isoformat().replace(':', '-') + '.email')
+    with open(fname, 'wb') as f:
+        f.write(bytes(msg))
+    return fname
 
 def _find_a2a(msg):
     '''
@@ -126,8 +139,9 @@ def _find_a2a(msg):
                                 break
             elif (not wc) and (part.get_content_type() == 'text/plain'):
                 this_txt = part.get_payload()
-                if _json_content_pat.match(this_txt):
-                    wc.msg = this_txt
+                match = _json_content_pat.match(this_txt)
+                if match:
+                    wc.msg = match.group(1)
 
     if best_part:
         wc.msg = best_part.get_payload()
@@ -137,12 +151,16 @@ def _find_a2a(msg):
     elif wc.msg:
        wc.tc = mtc.MessageTrustContext()
     else:
-        logging.error('No useful a2a message found in email. From: %s; Date: %s; Subject: %s.' % (
+        fname = _save_bad_msg(msg)
+        logging.error('No useful a2a message found in %s/%s. From: %s; Date: %s; Subject: %s.' % (
+            _bad_msgs_folder, fname,
             msg.get('from', 'unknown sender'), msg.get('date', 'at unknown time'), msg.get('subject', 'empty')
         ))
 
+    wc.subject = msg.get('subject')
+    wc.in_reply_to = msg.get('message-id')
     if not wc.sender:
-        wc.sender = msg['from']
+        wc.sender = msg.get('from')
     return wc
 
 
@@ -169,11 +187,20 @@ class MailTransport:
             queue = MailQueue()
         self.queue = queue
 
-    def send(self, payload, dest):
+    def send(self, payload, dest, in_reply_to_id=None, in_reply_to_subj=None):
         m = MIMEMultipart()
         m['From'] = "indyagent1@gmail.com" #TODO: get from config
         m['To'] = dest
-        m['Subject'] = "a2a message"
+        if in_reply_to_subj:
+            subj = in_reply_to_subj
+            if not _subject_redundant_prefix_pat.match(in_reply_to_subj):
+                subj = 'Re: ' + subj
+        else:
+            id = handler_common.get_thread_id_from_txt(payload)
+            subj = 'a2a thread %s' % id
+        m['Subject'] = subj
+        if in_reply_to_id:
+            m['In-Reply-To'] = in_reply_to_id
         m.attach(MIMEText('See attached file.', 'plain'))
         p = MIMEBase('application', 'octet-stream')
         p.set_payload(payload)
@@ -192,6 +219,8 @@ class MailTransport:
         be empty if nothing is found.
         '''
 
+        # First see if we have any messages queued on local hard drive.
+        # TODO: don't wait between message fetches if more local files exist.
         bytes = self.queue.pop()
         if bytes:
             return MailTransport.bytes_to_a2a_message(bytes)
@@ -210,15 +239,19 @@ class MailTransport:
                 if message_ids:
                     to_trash = []
                     try:
+                        # Download all messages from remote server to local hard drive
+                        # so we don't depend on server again for a while.
                         for i in range(0, len(message_ids)):
                             this_id = message_ids[i]
                             if this_id:
                                 msg_data = _check_imap_ok(m.uid('FETCH', this_id, '(RFC822)'))
                                 raw = msg_data[0][1]
                                 self.queue.push(raw)
-                                wc = MailTransport.bytes_to_a2a_message(raw)
                                 to_trash.append(this_id)
-                                return wc
+                        # If we downloaded anything, return first item.
+                        bytes = self.queue.pop()
+                        if bytes:
+                            return MailTransport.bytes_to_a2a_message(bytes)
                     finally:
                         if to_trash:
                             for id in to_trash:

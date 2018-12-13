@@ -19,7 +19,7 @@ def handle(wc, agent):
                 return True
         msg = start_msg(PING_RESPONSE_MSG_TYPE, thid=wc.obj.get('@id'), in_time=wc.in_time)
         msg['comment_ltxt'] = 'Hi from indyagent1@gmail.com.'
-        agent.trans.send(finish_msg(msg), wc.sender)
+        agent.trans.send(finish_msg(msg), wc.sender, wc.in_reply_to, wc.subject)
         return True
     elif t == PING_RESPONSE_MSG_TYPE:
         return True

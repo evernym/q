@@ -19,7 +19,7 @@ class FakeTransport:
     def pop(self):
         if self.rqueue:
             return self.rqueue.pop(0)
-    def send(self, payload, destination):
+    def send(self, payload, destination, in_reply_to_id = None, in_reply_to_subj = None):
         self.squeue.append((payload, destination))
     def receive(self):
         return self.pop()
@@ -78,9 +78,13 @@ class AgentTest(unittest.TestCase):
         # We shouldn't have anything to send, since we were asked not to respond.
         self.assertFalse(t.squeue)
 
-    def test_initial_ttt_move(self):
-        response = self.get_game_response('X')
-        self.check_json(response, ttt_handler.MOVE_MSG_TYPE, '@thread', 'thid')
+    def test_their_initial_ttt_move(self):
+        response = self.get_game_response('O', ['O:A1']) # They are O and make a first move; do I respond as X?
+        self.check_json(response, ttt_handler.MOVE_MSG_TYPE, '@thread', 'thid', '"X:B2"')
+
+    def test_my_initial_ttt_move(self):
+        response = self.get_game_response('X') # They are X but invite me to go first; do I respond as O?
+        self.check_json(response, ttt_handler.MOVE_MSG_TYPE, '@thread', 'thid', '"O:B2"')
 
     def test_win_ttt_move(self):
         response = self.get_game_response('X', ['X:A1', 'O:B1', 'X:A2', 'O:B2', 'X:A3'])

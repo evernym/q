@@ -55,6 +55,7 @@ class Game:
     def __init__(self):
         self.cells = [None]*9
         self.first = None
+        self._enforce_turns = True
     def __getitem__(self, key):
         return self.cells[key_to_idx(key)]
     def __setitem__(self, key, x_or_o):
@@ -65,8 +66,8 @@ class Game:
             self.first = x_or_o
         else:
             whose_turn = self.whose_turn()
-            if x_or_o != whose_turn:
-                raise ValueError("Bad value. Expected %s, since it that player's turn." % whose_turn)
+            if self._enforce_turns and (x_or_o != whose_turn):
+                raise ValueError("Bad value. Expected %s, since it is that player's turn." % whose_turn)
         i = key_to_idx(key)
         if self.cells[i] is not None:
             raise Exception("Can't reuse square %s. It already has an %s in it." % (x_or_o, self.cells[i]))
@@ -113,8 +114,14 @@ class Game:
             return 'none'
     def load(self, moves):
         '''Load an array of moves like "X:A1" into a game.'''
-        for m in moves:
-            self[m[2:]] = m[0]
+        # Suspend the enforcement of turn-taking, since we don't
+        # know whether the array of moves will be in alternating order.
+        self._enforce_turns = False
+        try:
+            for m in moves:
+                self[m[2:]] = m[0]
+        finally:
+            self._enforce_turns = True
     def dump(self):
         '''Convert a game into an array of moves like "X:A1".'''
         moves = []

@@ -12,6 +12,7 @@ import datetime
 import agent_common
 import mail_transport
 import handlers
+import handler_common
 
 class Agent():
 
@@ -35,9 +36,15 @@ class Agent():
                         handled = True
                         break
             if not handled:
-                logging.warning('Unhandled message -- unsupported @type %s with %s.' % (typ, wc))
+                etxt = 'Unhandled message -- unsupported @type %s with %s.' % (typ, wc)
+                logging.warning(etxt)
+                agent.trans.send(handler_common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
+            else:
+                logging.debug('Handled message of @type %s.' % typ)
         else:
-            logging.warning('Unhandled message -- missing @type with %s.' % wc)
+            etxt = 'Unhandled message -- missing @type with %s.' % wc
+            logging.warning(etxt)
+            agent.trans.send(handler_common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
         return handled
 
     def fetch_msg(self):
@@ -52,9 +59,11 @@ class Agent():
                     if wc:
                         self.handle_msg(wc)
                     else:
-                        time.sleep(30.0)
+                        time.sleep(2.0)
                 except KeyboardInterrupt:
                     sys.exit(0)
+                except json.decoder.JSONDecodeError as e:
+                    agent.trans.send(handler_common.problem_report(wc, str(e)), wc.sender, wc.in_reply_to, wc.subject)
                 except:
                     agent_common.log_exception()
         finally:
@@ -64,7 +73,7 @@ def _get_config_from_cmdline():
     import argparse
     parser = argparse.ArgumentParser(description="Run a Hyperledger Indy agent that communicates by email.")
     parser.add_argument("--sf", metavar='FOLDER', default="~/.mailagent", help="folder where state is stored (default=~/.mailagent)")
-    parser.add_argument("--ll", metavar='LVL', default="INFO", help="log level (default=INFO)")
+    parser.add_argument("--ll", metavar='LVL', default="DEBUG", help="log level (default=INFO)")
     args = parser.parse_args()
     args.sf = os.path.expanduser(args.sf)
     return args
@@ -97,16 +106,12 @@ def _start_logging(ll):
         format='%(asctime)s\t%(funcName)s@%(filename)s#%(lineno)s\t%(levelname)s\t%(message)s',
         level=ll)
 
-def _load_plugins():
-    plugins.load()
-
 def _configure():
     args = _get_config_from_cmdline()
     _use_statefolder(args)
     cfg = _get_config_from_file()
     ll = _get_loglevel(args)
     _start_logging(ll)
-    plugins.load()
     return cfg
 
 if __name__ == '__main__':

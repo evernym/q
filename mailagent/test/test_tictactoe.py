@@ -98,6 +98,10 @@ class GameTest(unittest.TestCase):
         self.assertEqual(len(dumped), len(moves))
         for m in moves:
             self.assertTrue(m in dumped)
+    def test_turns_not_enforced_during_load(self):
+        moves = ["X:B1", "X:B2", "O:C2", "O:B3", "x:a3"]
+        self.game.load(moves)
+
 
 class AITest(unittest.TestCase):
     def test_line_winnable(self):
