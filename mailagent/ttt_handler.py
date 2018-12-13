@@ -18,10 +18,10 @@ def handle(wc, agent):
         t = wc.obj['@type']
         if t == MOVE_MSG_TYPE:
             them = wc.obj.get('ill_be', '')
-            if them and isinstance(them, str) and len(them) == 1 and them in 'XO':
-                them = them.strip().upper()
-            else:
-                raise Exception('Expected "ill_be" to contain either "X" or "O".')
+            # Double-convert ill_be. If they gave us a valid player
+            # ("X" or "O"), this will succeed and their value will be
+            # normalized. If not, this will fail with a helpful exception.
+            them = game.other_player(game.other_player(them))
             moves = wc.obj.get('moves', [])
             if not isinstance(moves, list) or len(moves) > 9:
                 raise Exception('Expected "moves" to be a list of at most 9 items.')

@@ -2,6 +2,16 @@ import re
 
 _move_split_pat = re.compile(r'\s*,\s*|\s*')
 
+# Python's built-in KeyError class doesn't allow a rich statement about
+# what's wrong with a key. It just returns the key value as the string of
+# the exception, without comment. Override this behavior -- return a
+# KeyError, but one that renders better.
+class MyKeyError(KeyError):
+    def __init__(self, args):
+        KeyError.__init__(self, args)
+    def __str__(self):
+        return self.args[0]
+
 def key_to_idx(key):
     bad_key = (not isinstance(key, str)) or len(key) != 2
     if not bad_key:
@@ -15,17 +25,17 @@ def key_to_idx(key):
         except:
             bad_key = True
     if bad_key:
-        raise KeyError('Bad key "%s". Expected A1 through C3.' % key)
+        raise MyKeyError('Bad key "%s". Expected A1 through C3.' % key)
     return ((r - 1) * 3) + 'ABC'.index(c)
 
 def idx_to_key(i):
     if (not isinstance(i, int)) or i < 0 or i > 8:
-        raise ValueError('Expected idx between 0 and 8, inclusive.')
+        raise ValueError('Bad cell index %s. Expected a number between 0 and 8, inclusive.' % i)
     return 'ABC'[i % 3] + str(int(1 + (i / 3)))
 
 def other_player(player:str):
     if (not isinstance(player, str)) or (len(player) != 1) or (player not in 'xoXO'):
-        raise ValueError('Expected X or O.')
+        raise ValueError('Bad player "%s" Expected X or O.' % player)
     if player in 'xX':
         return 'O'
     return 'X'

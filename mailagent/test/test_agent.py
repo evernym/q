@@ -8,6 +8,7 @@ import mwc
 import handlers
 import tp_handler
 import ttt_handler
+import handler_common
 
 class FakeTransport:
     def __init__(self):
@@ -37,6 +38,15 @@ class AgentTest(unittest.TestCase):
         self.assertTrue(a.handle_msg(wc))
         self.assertTrue(t.squeue)
         return t.squeue.pop(0)[0]
+
+    def get_game_response(self, ill_be, moves=None):
+        msg = {}
+        msg['@id'] = 'fakeid'
+        msg['@type'] = ttt_handler.MOVE_MSG_TYPE
+        msg['ill_be'] = ill_be
+        if moves is not None:
+            msg['moves'] = moves
+        return self.check_req_resp(json.dumps(msg))
 
     def check_json(self, json_txt, *regexes):
         # Prove it is valid json.
@@ -69,12 +79,28 @@ class AgentTest(unittest.TestCase):
         self.assertFalse(t.squeue)
 
     def test_initial_ttt_move(self):
-        msg = {}
-        msg['@id'] = 'fakeid'
-        msg['@type'] = ttt_handler.MOVE_MSG_TYPE
-        msg['ill_be'] = 'X'
-        response = self.check_req_resp(json.dumps(msg))
+        response = self.get_game_response('X')
         self.check_json(response, ttt_handler.MOVE_MSG_TYPE, '@thread', 'thid')
+
+    def test_win_ttt_move(self):
+        response = self.get_game_response('X', ['X:A1', 'O:B1', 'X:A2', 'O:B2', 'X:A3'])
+        self.check_json(response, ttt_handler.OUTCOME_MSG_TYPE, r'"winner"\s*:\s*"X"')
+
+    def test_lose_ttt_move(self):
+        response = self.get_game_response('O', ['X:A1', 'O:B1', 'X:A2', 'O:B2', 'X:A3'])
+        self.check_json(response, ttt_handler.OUTCOME_MSG_TYPE, r'"winner"\s*:\s*"X"')
+
+    def test_draw_ttt_move(self):
+        response = self.get_game_response('O', ['X:A1', 'O:B1', 'X:A2', 'O:B2', 'X:B3', 'O:A3', 'X:C1', 'O:C2', 'X:C3'])
+        self.check_json(response, ttt_handler.OUTCOME_MSG_TYPE, r'"winner"\s*:\s*"none"')
+
+    def test_ttt_bad_move(self):
+        response = self.get_game_response('O', ['X:A4'])
+        self.check_json(response, handler_common.PROBLEM_REPORT_MSG_TYPE, 'Bad key')
+
+    def test_ttt_bad_ill_be(self):
+        response = self.get_game_response('Fred', ['X:A1'])
+        self.check_json(response, handler_common.PROBLEM_REPORT_MSG_TYPE, 'Bad player')
 
 if __name__ == '__main__':
     unittest.main()
