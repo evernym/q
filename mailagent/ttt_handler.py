@@ -1,23 +1,17 @@
 import re
+import uuid
 
-import game
-import ai
+import ttt_game as game
+import ttt_ai as ai
+from handler_common import start_msg, finish_msg, problem_report, get_thread_id
 
 MOVE_MSG_TYPE = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/tictactoe/1.0/move'
-RESULTS_MSG_TYPE = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/tictactoe/1.0/results'
+OUTCOME_MSG_TYPE = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/tictactoe/1.0/outcome'
 
 TYPES = [
     MOVE_MSG_TYPE,
-    RESULTS_MSG_TYPE
+    OUTCOME_MSG_TYPE
 ]
-
-MOVE_MSG_TEMPLATE = \
-'''{
-    "@type": "%s",
-    "@id": "%%s",
-    "ill_be": "X",
-    "moves": ["X:B2"]
-}''' % MOVE_MSG_TYPE
 
 def handle(wc, agent):
     try:
@@ -31,17 +25,20 @@ def handle(wc, agent):
             moves = wc.obj.get('moves', [])
             if not isinstance(moves, list) or len(moves) > 9:
                 raise Exception('Expected "moves" to be a list of at most 9 items.')
+            thid = get_thread_id(wc)
             g = game.Game()
             g.load(moves)
             w = g.winner()
             if w:
-                agent.trans.send('{"@type": "result", "outcome": "%s won."}')
-            me = game.other_player(them)
-            if them == 'X':
-                g.load(wc.obj['moves'])
+                resp = start_msg(OUTCOME_MSG_TYPE, thid)
+                resp['winner'] = w
+            else:
+                me = game.other_player(them)
                 choice = ai.next_move(g, me)
                 g[choice] = me
-            agent.trans.send('{"@type": "%s"}' % MOVE_MSG_TYPE, wc.sender)
+                resp = start_msg(MOVE_MSG_TYPE, thid)
+                resp['moves'] = g.dump()
+            agent.trans.send(finish_msg(resp), wc.sender)
     except Exception as e:
-        agent.trans.send('{"@type": "problem-report", "explain_ltxt": "%s"}', wc.sender)
+        agent.trans.send(problem_report(wc, str(e)), wc.sender)
     return True

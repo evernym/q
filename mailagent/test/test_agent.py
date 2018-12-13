@@ -1,11 +1,13 @@
 import unittest
+import json
+import re
 
 import helpers
 import agent
 import mwc
-import plugins
-from protocols.trust_ping import tp_handler
-from protocols.tictactoe import ttt_handler
+import handlers
+import tp_handler
+import ttt_handler
 
 class FakeTransport:
     def __init__(self):
@@ -36,6 +38,18 @@ class AgentTest(unittest.TestCase):
         self.assertTrue(t.squeue)
         return t.squeue.pop(0)[0]
 
+    def check_json(self, json_txt, *regexes):
+        # Prove it is valid json.
+        obj = json.loads(json_txt)
+        # Prove that it contains the specified strings.
+        missing = []
+        for item in regexes:
+            pat = re.compile(item)
+            if not pat.search(json_txt):
+                missing.append(pat.pattern)
+        if missing:
+            self.fail('Could not find the following patterns in the JSON text: %s' % '/'.join(missing))
+
     def test_fetch_with_empty_inbox(self):
         self.assertFalse(a.fetch_msg())
 
@@ -45,8 +59,7 @@ class AgentTest(unittest.TestCase):
 
     def test_ping_response(self):
         response = self.check_req_resp('{"@type": "%s", "@id": "x"}' % tp_handler.PING_MSG_TYPE)
-        for item in ['@thread', '@timing', 'in_time', 'out_time', 'thid']:
-            self.assertTrue(response.index(item) > -1)
+        self.check_json(response, '@thread', '@timing', 'in_time', 'out_time', 'thid')
 
     def test_ping_no_response(self):
         wc = mwc.MessageWithContext('{"@type": "%s", "response_requested": false}' % tp_handler.PING_MSG_TYPE)
@@ -56,8 +69,12 @@ class AgentTest(unittest.TestCase):
         self.assertFalse(t.squeue)
 
     def test_initial_ttt_move(self):
-        response = self.check_req_resp(ttt_handler.MOVE_MSG_TEMPLATE % "fakeid")
-
+        msg = {}
+        msg['@id'] = 'fakeid'
+        msg['@type'] = ttt_handler.MOVE_MSG_TYPE
+        msg['ill_be'] = 'X'
+        response = self.check_req_resp(json.dumps(msg))
+        self.check_json(response, ttt_handler.MOVE_MSG_TYPE, '@thread', 'thid')
 
 if __name__ == '__main__':
     unittest.main()

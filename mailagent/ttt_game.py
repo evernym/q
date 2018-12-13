@@ -85,7 +85,7 @@ class Game:
     def winner(self):
         '''
         Search for a winner. Return None if game isn't over, "X" if player X won,
-        "O" if player O won, and the empty string if it's a draw.
+        "O" if player O won, and 'none' if it's a draw.
         '''
         draw = True
         for line in LINES:
@@ -100,7 +100,7 @@ class Game:
             else:
                 draw = False
         if draw:
-            return ''
+            return 'none'
     def load(self, moves):
         '''Load an array of moves like "X:A1" into a game.'''
         for m in moves:

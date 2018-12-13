@@ -7,10 +7,11 @@ import os
 import sys
 import time
 import json
+import datetime
 
 import agent_common
 import mail_transport
-import plugins
+import handlers
 
 class Agent():
 
@@ -21,13 +22,15 @@ class Agent():
         self.trans = transport
 
     def handle_msg(self, wc):
+        # Record when we received this message.
+        wc.in_time = datetime.datetime.utcnow()
         handled = False
         wc.obj = json.loads(wc.msg)
-        typ = wc.obj['@type']
+        typ = wc.obj.get('@type')
         if typ:
-            handlers = plugins.BY_TYPE.get(typ)
-            if handlers:
-                for handler in handlers:
+            candidates = handlers.HANDLERS_BY_MSG_TYPE.get(typ)
+            if candidates:
+                for handler in candidates:
                     if handler.handle(wc, self):
                         handled = True
                         break

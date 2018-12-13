@@ -1,7 +1,6 @@
 '''Implements the trust ping protocol as defined at http://bit.ly/2GfTaEX.'''
 
-import json
-import datetime
+from handler_common import start_msg, finish_msg
 
 PING_MSG_TYPE = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/trust_ping/1.0/ping'
 PING_RESPONSE_MSG_TYPE = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/trust_ping/1.0/ping_response'
@@ -18,20 +17,9 @@ def handle(wc, agent):
         if rr is not None:
             if not rr:
                 return True
-        in_time = datetime.datetime.utcnow()
-        msg = {}
-        thid = wc.obj.get('@id')
-        if thid:
-            thread = {}
-            msg['@thread'] = thread
-            thread['thid'] = thid
-            thread['seqnum'] = 0
+        msg = start_msg(PING_RESPONSE_MSG_TYPE, thid=wc.obj.get('@id'), in_time=wc.in_time)
         msg['comment_ltxt'] = 'Hi from indyagent1@gmail.com.'
-        timing = {}
-        msg['@timing'] = timing
-        timing['in_time'] = in_time.isoformat()
-        timing['out_time'] = datetime.datetime.utcnow().isoformat()
-        agent.trans.send(json.dumps(msg), wc.sender)
+        agent.trans.send(finish_msg(msg), wc.sender)
         return True
     elif t == PING_RESPONSE_MSG_TYPE:
         return True

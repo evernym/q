@@ -7,7 +7,7 @@ root_module_folder = os.path.abspath(os.path.join(test_folder, '..'))
 # it happens.
 if root_module_folder not in sys.path:
     # Tell python that code in the parent folder should be searched
-    # when processing import statementss
+    # when processing import statements
     sys.path.append(root_module_folder)
 
     # Make sure the logging code inside our various modules writes to test.log

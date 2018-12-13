@@ -3,9 +3,9 @@ import sys
 import os
 import random
 
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-import game
-import ai
+import helpers
+import ttt_game as game
+import ttt_ai as ai
 
 class GameTest(unittest.TestCase):
     def setUp(self):
@@ -133,7 +133,7 @@ class AITest(unittest.TestCase):
                 g[cell] = player
                 n += 1
                 w = g.winner()
-                if w:
+                if w and (w != 'none'):
                     if w != g.first or n != 9:
                         self.fail('Game won unexpectedly:\n%s.' % str(g))
                     break
