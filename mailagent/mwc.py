@@ -20,6 +20,8 @@ class MessageWithContext:
             assert isinstance(sender, str)
         self.msg = msg
         self.sender = sender
+        self.in_reply_to = None
+        self.subject = None
         if tc is None:
             tc = mtc.MessageTrustContext()
         # If we have a DID or key as the sender, then we know who sent it with confidence.
@@ -29,6 +31,7 @@ class MessageWithContext:
         if sender and ('@' not in sender):
             tc.authenticated_origin = True
         self.tc = tc
+        self.obj = None
     def __bool__(self):
         return bool(self.msg)
     def __str__(self):
