@@ -1,3 +1,9 @@
+import os
+import time
+import sys
+sys.path.append('../')
+from mailagent.mail_transport import MailTransport
+
 '''An agent that interacts by SMTP.'''
 
 class Agent():
@@ -39,10 +45,11 @@ class Agent():
 def get_cfg_from_cmdline():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("-s", "--statefolder", default="~/.mailagent", help="folder where state is stored")
+    parser.add_argument("-s", "--statefolder" ,default="~/.mailagent", help="folder where state is stored")
     parser.add_argument("-l", "--loglevel", default="WARN", help="min level of messages written to log")
-    parser.parse_args()
+    args = parser.parse_args()
     args.statefolder = os.path.expanduser(args.statefolder)
+    return args
 
 def get_config_from_file():
     import configparser

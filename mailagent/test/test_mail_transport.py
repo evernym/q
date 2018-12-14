@@ -5,7 +5,7 @@ import os
 # Tell python that code in the parent folder should be searched
 # when processing import statementss
 sys.path.append('..')
-from mail_transport import *
+from mailagent.mail_transport import *
 
 class TransportTestCase(unittest.TestCase):
 
