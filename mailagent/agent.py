@@ -1,6 +1,8 @@
 import os
 import time
 import sys
+import email
+import getpass, imaplib
 sys.path.append('../')
 from mailagent.mail_transport import MailTransport
 
@@ -13,11 +15,16 @@ class Agent():
         if not transport:
             transport = MailTransport(cfg)
         self.trans = transport
+        self.imapSession = imaplib.IMAP4_SSL(self.trans.imap_cfg['server'])
+        self.imapUsr = self.trans.imap_cfg['username']
+        self.imapPwd = self.trans.imap_cfg['password']
+
 
     def process_message(self, msg):
-        sender_key, plaintext = self.decrypt(msg)
-        if plaintext:
-            typ = plaintext.get_type()
+        # sender_key, plaintext = self.decrypt(msg)
+        # if plaintext:
+        if msg:
+            typ = msg.get_type()
             if typ == 'ping':
                 self.handle_ping()
             else:
@@ -27,7 +34,28 @@ class Agent():
         # Put some code here that checks our inbox. If we have
         # something, return topmost (oldest) item. If not, return
         # None.
-        return None
+        try:
+            typ, accountDetails = self.imapSession.login(self.imapUsr, self.imapPwd)
+            if typ != 'OK':
+                print
+                'Not able to sign in!'
+                raise
+
+            # imapSession.select('[Gmail]/All Mail')
+            self.imapSession.select('Inbox')
+            # type, data = self.imapSession.select('Inbox')
+            type, messages = self.imapSession.search(None, '(UNSEEN)')
+            # for num in accountDetails[0].split():
+            for num in messages[0].split():
+                typ, data = self.imapSession.fetch(num, '(RFC822)')
+                # typ1, data1 = self.imapSession.store(num, '-FLAGS', '\\Seen')
+                # data = data.decode('utf-8')
+                msg = email.message_from_string(data[0][1].decode('utf-8'))
+                return msg
+
+        except Exception as e:
+            print(e)
+            'Not able to download all attachments.'
 
     def run(self):
         while True:
