@@ -1,113 +1,84 @@
-import os
-import time
-import sys
-import email
-import getpass, imaplib
-import json
-import re
-sys.path.append('../')
-from mailagent.mail_transport import MailTransport
+#!/usr/bin/env python
 
-'''An agent that interacts by SMTP.'''
+# '''A SSI agent that interacts by email.'''
+
+import logging
+import os
+import sys
+import time
+import json
+import datetime
+
+import agent_common
+import mail_transport
+import handlers
+import handler_common
 
 class Agent():
 
     def __init__(self, cfg=None, transport=None):
         self.cfg = cfg
         if not transport:
-            transport = MailTransport(cfg)
+            transport = mail_transport.MailTransport(cfg)
         self.trans = transport
-        self.imapSession = imaplib.IMAP4_SSL(self.trans.imap_cfg['server'])
-        self.imapUsr = self.trans.imap_cfg['username']
-        self.imapPwd = self.trans.imap_cfg['password']
 
-
-    def process_message(self, msg):
-        # sender_key, plaintext = self.decrypt(msg)
-        # if plaintext:
-        if msg:
-            typ = msg.get_type()
-            if typ == 'ping':
-                self.handle_ping()
+    def handle_msg(self, wc):
+        # Record when we received this message.
+        wc.in_time = datetime.datetime.utcnow()
+        handled = False
+        wc.obj = json.loads(wc.msg)
+        typ = wc.obj.get('@type')
+        if typ:
+            candidates = handlers.HANDLERS_BY_MSG_TYPE.get(typ)
+            if candidates:
+                for handler in candidates:
+                    if handler.handle(wc, self):
+                        handled = True
+                        break
+            if not handled:
+                etxt = 'Unhandled message -- unsupported @type %s with %s.' % (typ, wc)
+                logging.warning(etxt)
+                agent.trans.send(handler_common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
             else:
-                raise Exception('Unkonwn message type %s' % typ)
+                logging.debug('Handled message of @type %s.' % typ)
+        else:
+            etxt = 'Unhandled message -- missing @type with %s.' % wc
+            logging.warning(etxt)
+            agent.trans.send(handler_common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
+        return handled
 
-    def find_between(self, s, first, last):
-        try:
-            start = s.index(first) + len(first)
-            end = s.rindex(last, start)
-            return s[start:end]
-        except ValueError:
-            return ""
-
-    def fetch_message(self):
-        msg = []
-        try:
-            typ, accountDetails = self.imapSession.login(self.imapUsr, self.imapPwd)
-            time.sleep(5)
-            if typ != 'OK':
-                print
-                'Not able to sign in!'
-                raise
-
-            # imapSession.select('[Gmail]/All Mail')
-            self.imapSession.select('Inbox')
-            # type, data = self.imapSession.select('Inbox')
-            typ, data = self.imapSession.search(None, '(UNSEEN)')
-            if typ != 'OK':
-                print
-                'Error searching Inbox.'
-                raise
-
-            for msgId in data[0].split():
-                typ, messageParts = self.imapSession.fetch(msgId, '(RFC822)')
-                if typ != 'OK':
-                    print
-                    'Error fetching mail.'
-                    raise
-
-                emailBody = messageParts[0][1]
-                # try:
-                print("email body Type is: ", type(emailBody))
-                emailBody = emailBody.decode("utf-8")
-                print("new email body Type is: ", type(emailBody))
-                mail = email.message_from_string(emailBody)
-                msgPayload = mail._payload[0]._payload
-                mainMsg = msgPayload[msgPayload.find("{"):msgPayload.find("}")+1]
-                jsonMsgPayload = json.loads(mainMsg)
-                msg.append(jsonMsgPayload)
-                print(jsonMsgPayload)
-                # except Exception as e:
-                #     print(e)
-            print(msg)
-            return msg
-        except Exception as e:
-            print(e)
-            'Not able to download all attachments.'
+    def fetch_msg(self):
+        return self.trans.receive()
 
     def run(self):
-        while True:
-            try:
-                msg = self.fetch_message()
-                if msg:
-                    self.process_message(msg)
-                else:
-                    time.sleep(1000)
-            except KeyboardInterrupt:
-                sys.exit(0)
-            except:
-                traceback.print_exc()
+        logging.info('Agent started.')
+        try:
+            while True:
+                try:
+                    wc = self.fetch_msg()
+                    if wc:
+                        self.handle_msg(wc)
+                    else:
+                        time.sleep(2.0)
+                except KeyboardInterrupt:
+                    sys.exit(0)
+                except json.decoder.JSONDecodeError as e:
+                    agent.trans.send(handler_common.problem_report(wc, str(e)), wc.sender, wc.in_reply_to, wc.subject)
+                except:
+                    agent_common.log_exception()
+        finally:
+            logging.info('Agent stopped.')
 
-def get_cfg_from_cmdline():
+def _get_config_from_cmdline():
     import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-s", "--statefolder" ,default="~/.mailagent", help="folder where state is stored")
-    parser.add_argument("-l", "--loglevel", default="WARN", help="min level of messages written to log")
+    parser = argparse.ArgumentParser(description="Run a Hyperledger Indy agent that communicates by email.")
+    parser.add_argument("--sf", metavar='FOLDER', default="~/.mailagent", help="folder where state is stored (default=~/.mailagent)")
+    parser.add_argument("--ll", metavar='LVL', default="DEBUG", help="log level (default=INFO)")
     args = parser.parse_args()
-    args.statefolder = os.path.expanduser(args.statefolder)
+    args.sf = os.path.expanduser(args.sf)
     return args
 
-def get_config_from_file():
+def _get_config_from_file():
     import configparser
     cfg = configparser.ConfigParser()
     cfg_path = 'mailagent.cfg'
@@ -115,18 +86,35 @@ def get_config_from_file():
         cfg.read(cfg_path)
     return cfg
 
-def configure():
-    args = get_cfg_from_cmdline()
+def _use_statefolder(args):
+    if not os.path.exists(args.sf):
+        os.makedirs(args.sf)
+    os.chdir(args.sf)
 
-    sf = args.statefolder
-    if not os.path.exists(sf):
-        os.makedirs(sf)
-    os.chdir(sf)
+def _get_loglevel(args):
+    ll = ('DIWEC'.index(args.ll[0].upper()) + 1) * 10
+    if ll <= 0:
+        try:
+            ll = int(args.loglevel)
+        except:
+            sys.exit('Unrecognized loglevel %s.' % args.loglevel)
+    return ll
 
-    cfg = get_config_from_file()
+def _start_logging(ll):
+    logging.basicConfig(
+        filename='mailagent.log',
+        format='%(asctime)s\t%(funcName)s@%(filename)s#%(lineno)s\t%(levelname)s\t%(message)s',
+        level=ll)
+
+def _configure():
+    args = _get_config_from_cmdline()
+    _use_statefolder(args)
+    cfg = _get_config_from_file()
+    ll = _get_loglevel(args)
+    _start_logging(ll)
     return cfg
 
 if __name__ == '__main__':
-    cfg = configure()
+    cfg = _configure()
     agent = Agent(cfg)
     agent.run()

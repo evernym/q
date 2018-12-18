@@ -1,0 +1,126 @@
+Delivered-To: indyagent1@gmail.com
+Received: by 2002:a17:90a:10f:0:0:0:0 with SMTP id b15-v6csp2230097pjb;
+        Sat, 8 Dec 2018 20:35:48 -0800 (PST)
+X-Received: by 2002:a6b:1411:: with SMTP id 17mr6403978iou.252.1544330148721;
+        Sat, 08 Dec 2018 20:35:48 -0800 (PST)
+ARC-Seal: i=1; a=rsa-sha256; t=1544330148; cv=none;
+        d=google.com; s=arc-20160816;
+        b=dTCc7tb+roEfxJnCTJeasC5pOlXmViXF2X7zW+NV/DYthGbnMO2LCeuH855/b7VIBV
+         tzfTZW8KRjbqLASQwGtL25J0dco6COF06JGMJdWdDw5Uy58HtsIZUqUnT4w5RyEKt8Ea
+         EbW7BM3+Pw/OxqfE12LNm7EhWc4IgDdTfBqdDMZMDBIElNtvvXh4Y1Gw5G34cYxeUT/F
+         S1AbzOBiaL4kLQreggbrSn7IlwIkY+qM3miGdlkYB+Uygot+/etbkpSdPlsG2IQjB1oP
+         l3Z0rUDTDWeyGM6kvDlvDGyJ8ctIQC5DMod1e80PoWWoy67H3Ml2cYlTaGTqjYwrYkTW
+         wpRA==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20160816;
+        h=to:subject:message-id:date:from:reply-to:mime-version
+         :dkim-signature;
+        bh=CZaHBHJMh48BTAoU3hzxOczTSfE0Asg/YW0Ft+qGDo0=;
+        b=TKawMLuBg9mgGtsFRTrgMWkcGVqjYHlN6xsm2ZNB0WBNYw5mIiWe85PGTcbOtKSZVI
+         KzlY1fPIDp0314VIwWtOliq4BSKbis9gS/luYY1+LKUqAN2Qi1ZdTtU9rJwTeBM8Bawv
+         f0Nl4WPKHS7JJddb1oKxUezRtLxv7oPlkwrrJvFweZWQiHe5kFIEkKwIKLdsVOihNiSc
+         /6g1HvKOpNB99xakA4UYcz30z76qfXFSVZ+HRLlYKvVqM3OR8hEab8tPTfV9fdhqLFm6
+         Rb5ixHzisic0286MLaYrQBU6EsmmRI8DG7PN6jUvNQWI/e6h3kOwc/zaPwbmOTus16Tq
+         ioAw==
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@gmail.com header.s=20161025 header.b=HRdDSRoH;
+       spf=pass (google.com: domain of daniel.hardman@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=daniel.hardman@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com
+Return-Path: <daniel.hardman@gmail.com>
+Received: from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])
+        by mx.google.com with SMTPS id k75sor13826947itb.18.2018.12.08.20.35.48
+        for <indyagent1@gmail.com>
+        (Google Transport Security);
+        Sat, 08 Dec 2018 20:35:48 -0800 (PST)
+Received-SPF: pass (google.com: domain of daniel.hardman@gmail.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@gmail.com header.s=20161025 header.b=HRdDSRoH;
+       spf=pass (google.com: domain of daniel.hardman@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=daniel.hardman@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20161025;
+        h=mime-version:reply-to:from:date:message-id:subject:to;
+        bh=CZaHBHJMh48BTAoU3hzxOczTSfE0Asg/YW0Ft+qGDo0=;
+        b=HRdDSRoH6iua/jLFnT133ve2QaXyi7NJciMrPgd/heBJ7R+YhUW+kfQk14XP9xnShv
+         YDpBNaln6swyjNyiKeWwsrbgHLgI36IXjXQThz6FoKC4JBfIyH3DQiM1a/kuacfb+T0x
+         JOjPTB087UIXFWhLB8HQP2EbPTRw0/0A9/O9DZoLmW5O81gR09zWq3dR6AJ6+Hl7H8Fg
+         tkuiNWwvlm+PfXSfJLmOnM+T/v8YmbYe7jqdHCGM8HjHyHu1QbJiq/sCuRy1Z8TSE7lZ
+         hBkFdmxHJ9RN5zHbXG0AqlBMsCDN4xOVYTgVze64kToHuE2Dv/tMX+hqiZj/w4hIjUt3
+         q2/A==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20161025;
+        h=x-gm-message-state:mime-version:reply-to:from:date:message-id
+         :subject:to;
+        bh=CZaHBHJMh48BTAoU3hzxOczTSfE0Asg/YW0Ft+qGDo0=;
+        b=lpDStZDx+pyet3JuuknwRbiyjwT5ESBA8e1Ou6hImuHHGWYb4iC+bAHIYIFdY44tp5
+         PPo1Bpgq2Qocgyup39TIlFrcmkWEHYHQQCOBOZt35gt4oTeEaT8dANePgp4QAsubqTtl
+         jJ61en8sTprrqf1A2HQvqqSuraZrxobYUg0Y87WAI9/vNVm5QWaJ/L/PlqwqlclQTHAz
+         Xqr+bVvYOcY4yCmLXtypBiK5PFWboDXqoTDc02uJQOXW7NDCLMN6cGroPkjr1ksD7xAj
+         xdUV5rLKjfXeI4NCmAwUoPwnYHlrtuZUGSF7RYRBiXOwJSSbp9+8uLi9uXpsHxrLT6Qd
+         ZTZA==
+X-Gm-Message-State: AA+aEWZzndFFUDgweiv+6caliSme9Vl5+bTaY0rhQQU9r2vxhCurRpDH
+	yZrRAL3v3X9DgdzRzMJCX2x5x+6KbgQq9t2mtBpWMd6J
+X-Google-Smtp-Source: AFSGD/WYDxMjY8FUFzE3rNY7mJ3hxFrV8StJ9RtpQKwFh/pDi4LmVm1Cg14CFXgtNdwsxYEvRVHZK8n6md9RZxNj2k8=
+X-Received: by 2002:a24:89:: with SMTP id 131mr6706330ita.105.1544330147884;
+ Sat, 08 Dec 2018 20:35:47 -0800 (PST)
+MIME-Version: 1.0
+Reply-To: daniel.hardman@gmail.com
+From: fred@flintstones.org
+Date: Sat, 8 Dec 2018 21:35:36 -0700
+Message-ID: <CACU_chk1sjRPu9Sv2dejQhiwj7OPpNkbK3RA9LpKH_tF=jbfqg@mail.gmail.com>
+Subject: test
+To: indyagent1@gmail.com
+Content-Type: multipart/alternative; boundary="000000000000e173e5057c8f6179"
+
+--000000000000e173e5057c8f6179
+Content-Type: text/plain; charset="UTF-8"
+
+{
+  "@type":
+"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/notification/1.0/problem-report",
+  "@id": "7c9de639-c51c-4d60-ab95-103fa613c805",
+  "@thread": {
+    "thid": "1e513ad4-48c9-444e-9e7e-5b8b45c5e325",
+    "seqnum": 0
+  },
+  "@msg_catalog": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/error-codes",
+  "@locale": "en",
+  "explain-ltxt": "Unable to find a route to the specified recipient.",
+  "explain-l10n": {
+    "code": "cant-find-route",
+    "es": "No se puede encontrar una ruta al destinatario especificado"
+  },
+  "problem-items": [
+    {
+      "recipient": "did:sov:C805sNYhMrjHiqZDTUASHg"
+    }
+  ],
+  "who-retries": "you",
+  "impact": "message",
+  "time-noticed": "2019-05-27 18:23:06Z"
+}
+
+--000000000000e173e5057c8f6179
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr"><div dir=3D"ltr"><div>{</div><div>=C2=A0 &quot;@type&quot;=
+: &quot;did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/notification/1.0/problem-report=
+&quot;,</div><div>=C2=A0 &quot;@id&quot;: &quot;7c9de639-c51c-4d60-ab95-103=
+fa613c805&quot;,</div><div>=C2=A0 &quot;@thread&quot;: {</div><div>=C2=A0 =
+=C2=A0 &quot;thid&quot;: &quot;1e513ad4-48c9-444e-9e7e-5b8b45c5e325&quot;,<=
+/div><div>=C2=A0 =C2=A0 &quot;seqnum&quot;: 0</div><div>=C2=A0 },</div><div=
+>=C2=A0 &quot;@msg_catalog&quot;: &quot;did:sov:BzCbsNYhMrjHiqZDTUASHg;spec=
+/error-codes&quot;,</div><div>=C2=A0 &quot;@locale&quot;: &quot;en&quot;,</=
+div><div>=C2=A0 &quot;explain-ltxt&quot;: &quot;Unable to find a route to t=
+he specified recipient.&quot;,</div><div>=C2=A0 &quot;explain-l10n&quot;: {=
+</div><div>=C2=A0 =C2=A0 &quot;code&quot;: &quot;cant-find-route&quot;,</di=
+v><div>=C2=A0 =C2=A0 &quot;es&quot;: &quot;No se puede encontrar una ruta a=
+l destinatario especificado&quot;</div><div>=C2=A0 },</div><div>=C2=A0 &quo=
+t;problem-items&quot;: [</div><div>=C2=A0 =C2=A0 {</div><div>=C2=A0 =C2=A0 =
+=C2=A0 &quot;recipient&quot;: &quot;did:sov:C805sNYhMrjHiqZDTUASHg&quot;</d=
+iv><div>=C2=A0 =C2=A0 }</div><div>=C2=A0 ],</div><div>=C2=A0 &quot;who-retr=
+ies&quot;: &quot;you&quot;,</div><div>=C2=A0 &quot;impact&quot;: &quot;mess=
+age&quot;,</div><div>=C2=A0 &quot;time-noticed&quot;: &quot;2019-05-27 18:2=
+3:06Z&quot;</div><div>}</div></div></div>
+
+--000000000000e173e5057c8f6179--
