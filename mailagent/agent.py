@@ -3,6 +3,8 @@ import time
 import sys
 import email
 import getpass, imaplib
+import json
+import re
 sys.path.append('../')
 from mailagent.mail_transport import MailTransport
 
@@ -30,10 +32,16 @@ class Agent():
             else:
                 raise Exception('Unkonwn message type %s' % typ)
 
+    def find_between(self, s, first, last):
+        try:
+            start = s.index(first) + len(first)
+            end = s.rindex(last, start)
+            return s[start:end]
+        except ValueError:
+            return ""
+
     def fetch_message(self):
-        # Put some code here that checks our inbox. If we have
-        # something, return topmost (oldest) item. If not, return
-        # None.
+        msg = []
         try:
             typ, accountDetails = self.imapSession.login(self.imapUsr, self.imapPwd)
             time.sleep(5)
@@ -45,15 +53,13 @@ class Agent():
             # imapSession.select('[Gmail]/All Mail')
             self.imapSession.select('Inbox')
             # type, data = self.imapSession.select('Inbox')
-            type, messages = self.imapSession.search(None, '(UNSEEN)')
-            # for num in accountDetails[0].split():
-            # for num in messages[0].split():
-            #     typ, data = self.imapSession.fetch(num, '(RFC822)')
-            #     # typ1, data1 = self.imapSession.store(num, '-FLAGS', '\\Seen')
-            #     # data = data.decode('utf-8')
-            #     msg = email.message_from_string(data[0][1].decode('utf-8'))
-            #     return msg
-            for msgId in messages[0].split():
+            typ, data = self.imapSession.search(None, '(UNSEEN)')
+            if typ != 'OK':
+                print
+                'Error searching Inbox.'
+                raise
+
+            for msgId in data[0].split():
                 typ, messageParts = self.imapSession.fetch(msgId, '(RFC822)')
                 if typ != 'OK':
                     print
@@ -61,13 +67,20 @@ class Agent():
                     raise
 
                 emailBody = messageParts[0][1]
-                try:
-                    print("email body Type is: ", type(emailBody))
-                    emailBody = emailBody.decode("utf-8")
-                    print("new email body Type is: ", type(emailBody))
-                    mail = email.message_from_string(emailBody)
-                except Exception as e:
-                    print(e)
+                # try:
+                print("email body Type is: ", type(emailBody))
+                emailBody = emailBody.decode("utf-8")
+                print("new email body Type is: ", type(emailBody))
+                mail = email.message_from_string(emailBody)
+                msgPayload = mail._payload[0]._payload
+                mainMsg = msgPayload[msgPayload.find("{"):msgPayload.find("}")+1]
+                jsonMsgPayload = json.loads(mainMsg)
+                msg.append(jsonMsgPayload)
+                print(jsonMsgPayload)
+                # except Exception as e:
+                #     print(e)
+            print(msg)
+            return msg
         except Exception as e:
             print(e)
             'Not able to download all attachments.'
