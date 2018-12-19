@@ -1,4 +1,3 @@
-import ssl
 import datetime
 import os
 import email
