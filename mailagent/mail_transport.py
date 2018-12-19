@@ -236,14 +236,17 @@ class MailTransport:
                 # our list will come back with message IDs that are stable no matter how
                 # the mailbox changes.
                 message_ids = _check_imap_ok(m.uid('SEARCH', None, 'ALL'))
+                msg_ids_str = message_ids[0].decode("utf-8")
+                message_ids_list = msg_ids_str.split(' ')
                 if message_ids:
                     to_trash = []
                     try:
                         # Download all messages from remote server to local hard drive
                         # so we don't depend on server again for a while.
-                        for i in range(0, len(message_ids)):
-                            this_id = message_ids[i]
+                        for i in range(0, len(message_ids_list)):
+                            this_id = message_ids_list[i]
                             if this_id:
+                                # temp = m.FETCH(this_id, '(RFC822)')
                                 msg_data = _check_imap_ok(m.uid('FETCH', this_id, '(RFC822)'))
                                 raw = msg_data[0][1]
                                 self.queue.push(raw)
