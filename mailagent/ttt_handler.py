@@ -28,7 +28,12 @@ def handle(wc, agent):
                 resp = start_msg(OUTCOME_MSG_TYPE, thid)
                 resp['winner'] = w
             else:
-                them = wc.obj.get('ill_be', '')
+                # TTT protocol was updated to rename field ill_be --> me.
+                # Look for 'me' by preference, but still allow ill_be for
+                # the time being.
+                them = wc.obj.get('me', '')
+                if not them:
+                    them = wc.obj.get('ill_be')
                 if them:
                     me = game.other_player(them)
                 else:
@@ -37,7 +42,7 @@ def handle(wc, agent):
                 choice = ai.next_move(g, me)
                 g[choice] = me
                 resp = start_msg(MOVE_MSG_TYPE, thid)
-                resp['ill_be'] = me
+                resp['me'] = me
                 resp['moves'] = g.dump()
             agent.trans.send(finish_msg(resp), wc.sender, wc.in_reply_to, wc.subject)
     except Exception as e:
