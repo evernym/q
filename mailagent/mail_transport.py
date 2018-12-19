@@ -1,3 +1,4 @@
+import ssl
 import datetime
 import os
 import email
@@ -256,9 +257,9 @@ class MailTransport:
                         if bytes:
                             return MailTransport.bytes_to_a2a_message(bytes)
                     finally:
-                        if to_trash:
+                        if to_trash:	
                             for id in to_trash:
-                                m.uid('MOVE', id, '[Gmail]/Trash')
+                                m.uid('STORE', id, '+X-GM-LABELS', '\\Trash')
                         m.close()
 
         except KeyboardInterrupt:
