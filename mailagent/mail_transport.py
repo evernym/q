@@ -144,7 +144,7 @@ def _find_a2a(msg):
                     wc.msg = match.group(1)
 
     if best_part:
-        wc.msg = best_part.get_payload()
+        wc.msg = best_part.get_payload(decode=True)
         if best_part_ext_idx < 2:
             # TODO: decrypt and then, if authcrypted, add authenticated_origin in
             wc.tc = mtc.MessageTrustContext(confidentiality=True, integrity=True)
