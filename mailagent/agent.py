@@ -81,9 +81,9 @@ def _get_config_from_cmdline():
 def _get_config_from_file():
     import configparser
     cfg = configparser.ConfigParser()
-    cfg_path = 'mailagent.cfg'
+    cfg_path = 'config.ini'
     if os.path.isfile(cfg_path):
-        cfg.read(cfg_path)
+        cfg.read('config.ini')
     return cfg
 
 def _use_statefolder(args):

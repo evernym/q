@@ -20,7 +20,7 @@ _subject_redundant_prefix_pat = re.compile('(i?)(re|fwd):.*')
 _default_imap_cfg = {
     'server': 'imap.gmail.com',
     'username': 'indyagent1@gmail.com',
-    'password': 'I 0nly talk via email!',
+    'password': 'invalid password',
     'ssl': '1',
     'port': '993'
 }
@@ -28,13 +28,14 @@ _default_imap_cfg = {
 _default_smtp_cfg = {
     'server': 'smtp.gmail.com',
     'username': 'indyagent1@gmail.com',
-    'password': 'Open, sesame!',
+    'password': 'invalid',
     'port': '587'
 }
 
 def _apply_cfg(cfg, section, defaults):
+    tmp = cfg[section]
     x = defaults
-    if cfg and (section in cfg):
+    if cfg and (cfg[section]):
         src = cfg[section]
         for key in src:
             x[key] = src[key]
