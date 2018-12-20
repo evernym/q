@@ -33,7 +33,6 @@ _default_smtp_cfg = {
 }
 
 def _apply_cfg(cfg, section, defaults):
-    tmp = cfg[section]
     x = defaults
     if cfg and (cfg[section]):
         src = cfg[section]
