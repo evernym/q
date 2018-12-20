@@ -1,17 +1,12 @@
-# Python code to illustrate Sending mail with attachments
+# Python code to illustrate Sending mail with json-format attachments
 # from your Gmail account
 
 # libraries to be imported
 import smtplib
-import re
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
-
-import handler_common
-
-_subject_redundant_prefix_pat = re.compile('(i?)(re|fwd):.*')
 
 def send(senderEmail, senderPwd, dest, fileName):
     filename = fileName
