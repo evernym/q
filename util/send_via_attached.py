@@ -11,12 +11,39 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 
-def send(senderEmail, senderPwd, server, port, dest, fileName):
+def send(senderEmail, senderPwd, server, port, dest, fileName, userInput):
+    userInput = int(userInput)
     filename = fileName
     attachment = open(filename, "rb")
 
     # instance of MIMEMultipart
     m = MIMEMultipart()
+
+    if userInput == 1:
+        # attach the body with the msg instance
+        m.attach(MIMEText('See attached file.', 'plain'))
+
+        # instance of MIMEBase and named as p
+        p = MIMEBase('application', 'octet-stream')
+
+        # To change the payload into encoded form
+        p.set_payload((attachment).read())
+
+        # encode into base64
+        encoders.encode_base64(p)
+
+        p.add_header('Content-Disposition', "attachment; filename=msg.ap")
+
+        # attach the instance 'p' to instance 'msg'
+        m.attach(p)
+
+    elif userInput == 2:
+        # attach the body with the msg instance
+        body = '{"@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/tictactoe/1.0/move", "@id": "518be002-de8e-456e-b3d5-8fe472477a86", "ill_be": "X", "moves": ["X:B2"],"comment_ltxt": "Let\'s play tic-tac-to. I\'ll be X. I pick cell B2."}'
+        m.attach(MIMEText(body, 'plain'))
+
+    else:
+        raise Exception("Wrong Input")
 
     # storing the senders email address.
     m['From'] = senderEmail  # TODO: get from config
@@ -26,23 +53,6 @@ def send(senderEmail, senderPwd, server, port, dest, fileName):
 
     # storing the subject
     m['Subject'] = 'temp'
-
-    # attach the body with the msg instance
-    m.attach(MIMEText('See attached file.', 'plain'))
-
-    # instance of MIMEBase and named as p
-    p = MIMEBase('application', 'octet-stream')
-
-    # To change the payload into encoded form
-    p.set_payload((attachment).read())
-
-    # encode into base64
-    encoders.encode_base64(p)
-
-    p.add_header('Content-Disposition', "attachment; filename=msg.ap")
-
-    # attach the instance 'p' to instance 'msg'
-    m.attach(p)
 
     # creates SMTP session
     s = smtplib.SMTP(server, port)
@@ -96,4 +106,6 @@ smtp_cfg = _apply_cfg(cfg, 'smtp', _default_smtp_cfg)
 
 # This is to send email to the agent.  Hence,
 # You can use your personal email
-send(smtp_cfg['username'], smtp_cfg['password'], smtp_cfg['server'], smtp_cfg['port'], 'indyagent1@gmail.com', '../mailagent/testFileToSend.json')
+
+userInput = input("Enter 1 if you want to test sending msg via attached file.  Enter 2 if you want to send via email body: ")
+send(smtp_cfg['username'], smtp_cfg['password'], smtp_cfg['server'], smtp_cfg['port'], 'indyagent1@gmail.com', '../mailagent/testFileToSend.json', userInput)
