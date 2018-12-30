@@ -62,10 +62,8 @@ def send(senderEmail, senderPwd, server, port, dest, fileName):
 def _get_config_from_cmdline():
     import argparse
     parser = argparse.ArgumentParser(description="Run a Hyperledger Indy agent that communicates by email.")
-    # parser.add_argument("--sf", metavar='FOLDER', default="~/.mailagent", help="folder where state is stored (default=~/.mailagent)")
     parser.add_argument("--ll", metavar='LVL', default="DEBUG", help="log level (default=INFO)")
     args = parser.parse_args()
-    # args.sf = os.path.expanduser(args.sf)
     return args
 
 def _get_config_from_file():
@@ -75,11 +73,6 @@ def _get_config_from_file():
     if os.path.isfile(cfg_path):
         cfg.read(home+'/.mailagent/config.ini')
     return cfg
-
-# def _use_statefolder(args):
-#     if not os.path.exists(args.sf):
-#         os.makedirs(args.sf)
-#     os.chdir(args.sf)
 
 def _apply_cfg(cfg, section, defaults):
     x = defaults
@@ -95,6 +88,7 @@ _default_smtp_cfg = {
     'password': 'find the password from the config file',
     'port': '587'
 }
+
 home = expanduser("~")
 args = _get_config_from_cmdline()
 cfg = _get_config_from_file()
@@ -102,7 +96,4 @@ smtp_cfg = _apply_cfg(cfg, 'smtp', _default_smtp_cfg)
 
 # This is to send email to the agent.  Hence,
 # You can use your personal email
-
-print(os.listdir())
-print(os.getcwd())
 send(smtp_cfg['username'], smtp_cfg['password'], smtp_cfg['server'], smtp_cfg['port'], 'indyagent1@gmail.com', '../mailagent/testFileToSend.json')
