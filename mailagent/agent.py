@@ -14,6 +14,9 @@ import mail_transport
 import handlers
 import handler_common
 
+from indy import crypto, did, wallet
+
+
 class Agent():
 
     def __init__(self, cfg=None, transport=None):
@@ -113,6 +116,26 @@ def _configure():
     ll = _get_loglevel(args)
     _start_logging(ll)
     return cfg
+
+def encryptMsg(wallet_handle, my_vk, their_vk, msg):
+    with open('plaintext.txt', 'w') as f:
+        f.write(msg)
+    with open('plaintext.txt', 'rb') as f:
+        msg = f.read()
+    encrypted = crypto.anon_crypt(wallet_handle, my_vk, their_vk, msg)
+    # encrypted = await crypto.anon_crypt(their_vk, msg)
+    print('encrypted = %s' % repr(encrypted))
+    with open('encrypted.dat', 'wb') as f:
+        f.write(bytes(encrypted))
+    print('prepping %s' % msg)
+
+
+def decryptMsg(wallet_handle, my_vk):
+    with open('encrypted.dat', 'rb') as f:
+        encrypted = f.read()
+    decrypted = crypto.auth_decrypt(wallet_handle, my_vk, encrypted)
+    # decrypted = await crypto.anon_decrypt(wallet_handle, my_vk, encrypted)
+    print(decrypted)
 
 if __name__ == '__main__':
     cfg = _configure()
