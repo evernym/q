@@ -4,12 +4,57 @@
 # libraries to be imported
 import smtplib
 import os
-from os.path import expanduser
+import asyncio
 
+from indy import crypto, did, wallet
+
+from os.path import expanduser
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
+
+class secureMsg():
+    async def encryptMsg(self, fileName):
+        msg = open(fileName, 'rb')
+        encrypted = await
+        crypto.auth_crypt(self.wallet_handle, self.my_vk, self.their_vk, msg)
+        # encrypted = await crypto.anon_crypt(their_vk, msg)
+        print('encrypted = %s' % repr(encrypted))
+        with open('encrypted.dat', 'wb') as f:
+            f.write(bytes(encrypted))
+        print('prepping %s' % msg)
+
+    # Step 6 code goes here, replacing the read() stub.
+    async def decryptMsg(wallet_handle, my_vk, encrypted):
+        decrypted = await crypto.auth_decrypt(wallet_handle, my_vk, encrypted)
+        # decrypted = await crypto.anon_decrypt(wallet_handle, my_vk, encrypted)
+        return (decrypted)
+
+    def __init__(self):
+        self.me = input('Who are you? ').strip()
+        self.wallet_config = '{"id": "%s-wallet"}' % me
+        self.wallet_credentials = '{"key": "%s-wallet-key"}' % me
+
+        # 1. Create Wallet and Get Wallet Handle
+        try:
+            await wallet.create_wallet(self.wallet_config, self.wallet_credentials)
+        except:
+            pass
+        self.wallet_handle = await wallet.open_wallet(self.wallet_config, self.wallet_credentials)
+        print('wallet = %s' % self.wallet_handle)
+
+        (self.my_did, self.my_vk) = await did.create_and_store_my_did(self.wallet_handle, "{}")
+        print('my_did and verkey = %s %s' % (self.my_did, self.my_vk))
+
+        self.their = input("Other party's DID and verkey? ").strip().split(' ')
+        # return wallet_handle, my_did, my_vk, their[0], their[1]
+        try:
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(self.init())
+            time.sleep(1)  # waiting for libindy thread complete
+        except KeyboardInterrupt:
+            print('')
 
 def send(senderEmail, senderPwd, server, port, dest, fileName, userInput):
     userInput = int(userInput)
@@ -108,5 +153,8 @@ smtp_cfg = _apply_cfg(cfg, 'smtp2', _default_smtp_cfg)
 # This is to send email to the agent.  Hence,
 # You can use your personal email
 print(os.getcwd())
+
+securemsg = secureMsg
+securemsg.encryptMsg('../mailagent/testFileToSend.json')
 userInput = input("Enter 1 if you want to test sending msg via attached file.  Enter 2 if you want to send via email body: ")
 send(smtp_cfg['username'], smtp_cfg['password'], smtp_cfg['server'], smtp_cfg['port'], 'indyagent1@gmail.com', '../mailagent/testFileToSend.json', userInput)
