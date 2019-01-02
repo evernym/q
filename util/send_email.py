@@ -99,6 +99,7 @@ _default_smtp_cfg = {
     'port': '587'
 }
 
+print(os.getcwd())
 home = expanduser("~")
 args = _get_config_from_cmdline()
 cfg = _get_config_from_file()
@@ -106,6 +107,6 @@ smtp_cfg = _apply_cfg(cfg, 'smtp2', _default_smtp_cfg)
 
 # This is to send email to the agent.  Hence,
 # You can use your personal email
-
+print(os.getcwd())
 userInput = input("Enter 1 if you want to test sending msg via attached file.  Enter 2 if you want to send via email body: ")
 send(smtp_cfg['username'], smtp_cfg['password'], smtp_cfg['server'], smtp_cfg['port'], 'indyagent1@gmail.com', '../mailagent/testFileToSend.json', userInput)
