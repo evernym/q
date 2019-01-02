@@ -5,12 +5,13 @@ import imaplib
 import re
 import logging
 import smtplib
+import asyncio
+import time
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
-# from indy import crypto, did, wallet
-# import asyncio
+from indy import crypto, did, wallet
 
 import agent_common
 import mtc
@@ -139,7 +140,6 @@ def _find_a2a(msg):
 
     if best_part:
         wc.msg = best_part.get_payload(decode=True)
-
         if best_part_ext_idx < 2:
             # TODO: decrypt and then, if authcrypted, add authenticated_origin in
             wc.tc = mtc.MessageTrustContext(confidentiality=True, integrity=True)
@@ -156,55 +156,9 @@ def _find_a2a(msg):
     wc.in_reply_to = msg.get('message-id')
     if not wc.sender:
         wc.sender = msg.get('from')
+    loop = asyncio.get_event_loop()
+    wc.msg = loop.run_until_complete(MailTransport.secureMsg.decrypt(wc.msg))
     return wc
-
-# class secureMsg():
-#     async def encryptMsg(wallet_handle, my_vk, their_vk, msg):
-#         with open('plaintext.txt', 'w') as f:
-#             f.write(msg)
-#         with open('plaintext.txt', 'rb') as f:
-#             msg = f.read()
-#         encrypted = await
-#         crypto.anon_crypt(wallet_handle, my_vk, their_vk, msg)
-#         # encrypted = await crypto.anon_crypt(their_vk, msg)
-#         print('encrypted = %s' % repr(encrypted))
-#         with open('encrypted.dat', 'wb') as f:
-#             f.write(bytes(encrypted))
-#         print('prepping %s' % msg)
-#
-#     async def init():
-#
-#
-#     # Step 6 code goes here, replacing the read() stub.
-#     async def decryptMsg(wallet_handle, my_vk, encrypted):
-#         decrypted = await crypto.auth_decrypt(wallet_handle, my_vk, encrypted)
-#         # decrypted = await crypto.anon_decrypt(wallet_handle, my_vk, encrypted)
-#         return (decrypted)
-#
-#     def __init__(self):
-#         self.me = input('Who are you? ').strip()
-#         self.wallet_config = '{"id": "%s-wallet"}' % me
-#         self.wallet_credentials = '{"key": "%s-wallet-key"}' % me
-#
-#         # 1. Create Wallet and Get Wallet Handle
-#         try:
-#             await wallet.create_wallet(self.wallet_config, self.wallet_credentials)
-#         except:
-#             pass
-#         self.wallet_handle = await wallet.open_wallet(self.wallet_config, self.wallet_credentials)
-#         print('wallet = %s' % wallet_handle)
-#
-#         (self.my_did, self.my_vk) = await did.create_and_store_my_did(wallet_handle, "{}")
-#         print('my_did and verkey = %s %s' % (my_did, my_vk))
-#
-#         self.their = input("Other party's DID and verkey? ").strip().split(' ')
-#         # return wallet_handle, my_did, my_vk, their[0], their[1]
-#         try:
-#             loop = asyncio.get_event_loop()
-#             loop.run_until_complete(self.init())
-#             time.sleep(1)  # waiting for libindy thread complete
-#         except KeyboardInterrupt:
-#             print('')
 
 class MailTransport:
 
@@ -228,6 +182,7 @@ class MailTransport:
         if queue is None:
             queue = MailQueue()
         self.queue = queue
+        self.secureMsg = SecureMsg()
 
     def send(self, payload, dest, in_reply_to_id=None, in_reply_to_subj=None):
         m = MIMEMultipart()
@@ -308,3 +263,52 @@ class MailTransport:
         except:
             agent_common.log_exception()
         return mwc.MessageWithContext()
+
+class SecureMsg():
+#     async def encryptMsg(wallet_handle, my_vk, their_vk, msg):
+#         with open('plaintext.txt', 'w') as f:
+#             f.write(msg)
+#         with open('plaintext.txt', 'rb') as f:
+#             msg = f.read()
+#         encrypted = await
+#         crypto.anon_crypt(wallet_handle, my_vk, their_vk, msg)
+#         # encrypted = await crypto.anon_crypt(their_vk, msg)
+#         print('encrypted = %s' % repr(encrypted))
+#         with open('encrypted.dat', 'wb') as f:
+#             f.write(bytes(encrypted))
+#         print('prepping %s' % msg)
+#
+#     async def init():
+#
+#
+#     # Step 6 code goes here, replacing the read() stub.
+    async def decryptMsg(self, encrypted):
+        decrypted = await crypto.auth_decrypt(self.wallet_handle, self.my_vk, encrypted)
+        # decrypted = await crypto.anon_decrypt(wallet_handle, my_vk, encrypted)
+        return (decrypted)
+#
+    async def init(self):
+        print('yoyoyo')
+        me = 'Mailagent'.strip()
+        self.wallet_config = '{"id": "%s-wallet"}' % me
+        self.wallet_credentials = '{"key": "%s-wallet-key"}' % me
+
+        # 1. Create Wallet and Get Wallet Handle
+        await wallet.delete_wallet(self.wallet_config, self.wallet_credentials)
+        await wallet.create_wallet(self.wallet_config, self.wallet_credentials)
+        self.wallet_handle = await wallet.open_wallet(self.wallet_config, self.wallet_credentials)
+        print('wallet = %s' % self.wallet_handle)
+
+        (self.my_did, self.my_vk) = await did.create_and_store_my_did(self.wallet_handle, "{}")
+        print('my_did and verkey = %s %s' % (self.my_did, self.my_vk))
+
+        self.their = input("Other party's DID and verkey? ").strip().split(' ')
+        return self.wallet_handle, self.my_did, self.my_vk, self.their[0], self.their[1]
+
+    def __init__(self):
+        try:
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(self.init())
+            time.sleep(1)  # waiting for libindy thread complete
+        except KeyboardInterrupt:
+            print('')
