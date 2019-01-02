@@ -102,7 +102,7 @@ _default_smtp_cfg = {
 home = expanduser("~")
 args = _get_config_from_cmdline()
 cfg = _get_config_from_file()
-smtp_cfg = _apply_cfg(cfg, 'smtp', _default_smtp_cfg)
+smtp_cfg = _apply_cfg(cfg, 'smtp2', _default_smtp_cfg)
 
 # This is to send email to the agent.  Hence,
 # You can use your personal email
