@@ -19,7 +19,7 @@ class SecureMsg():
     async def encryptMsg(self, decrypted):
         with open(decrypted, 'rb') as f:
             msg = f.read()
-        encrypted = await crypto.anon_crypt(self.wallet_handle, self.my_vk, self.their_vk, msg)
+        encrypted = await crypto.auth_crypt(self.wallet_handle, self.my_vk, self.their_vk, msg)
         # encrypted = await crypto.anon_crypt(their_vk, msg)
         print('encrypted = %s' % repr(encrypted))
         with open('encrypted.dat', 'wb') as f:
@@ -48,6 +48,7 @@ class SecureMsg():
         print('my_did and verkey = %s %s' % (self.my_did, self.my_vk))
 
         self.their = input("Other party's DID and verkey? ").strip().split(' ')
+        self.their_vk = self.their[1]
         return self.wallet_handle, self.my_did, self.my_vk, self.their[0], self.their[1]
 
     def __init__(self):
