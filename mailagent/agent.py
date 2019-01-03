@@ -8,11 +8,13 @@ import sys
 import time
 import json
 import datetime
+import asyncio
 
 import agent_common
 import mail_transport
 import handlers
 import handler_common
+from indy import crypto, did, wallet
 
 class Agent():
 
@@ -26,10 +28,21 @@ class Agent():
         # Record when we received this message.
         wc.in_time = datetime.datetime.utcnow()
         handled = False
-        wc.obj = json.loads(wc.msg)
+        print(wc.msg)
+        # decrypt wc.msg
+        loop = asyncio.get_event_loop()
+        wc.msg = loop.run_until_complete(securemsg.decryptMsg(wc.msg))
+        wc.obj = json.loads(wc.msg[1].decode("utf-8"))
+        # wc.obj = json.loads(wc.msg)
+        print("wc.obj is  ")
+        print(wc.obj)
         typ = wc.obj.get('@type')
+        print("typ is:  ")
+        print(typ)
         if typ:
             candidates = handlers.HANDLERS_BY_MSG_TYPE.get(typ)
+            print("handlers.HANDLERS_BY_MSG_TYPE is:  ")
+            print(candidates)
             if candidates:
                 for handler in candidates:
                     if handler.handle(wc, self):
@@ -68,6 +81,55 @@ class Agent():
                     agent_common.log_exception()
         finally:
             logging.info('Agent stopped.')
+
+class SecureMsg():
+#     async def encryptMsg(wallet_handle, my_vk, their_vk, msg):
+#         with open('plaintext.txt', 'w') as f:
+#             f.write(msg)
+#         with open('plaintext.txt', 'rb') as f:
+#             msg = f.read()
+#         encrypted = await
+#         crypto.anon_crypt(wallet_handle, my_vk, their_vk, msg)
+#         # encrypted = await crypto.anon_crypt(their_vk, msg)
+#         print('encrypted = %s' % repr(encrypted))
+#         with open('encrypted.dat', 'wb') as f:
+#             f.write(bytes(encrypted))
+#         print('prepping %s' % msg)
+#
+#     async def init():
+#
+#
+#     # Step 6 code goes here, replacing the read() stub.
+    async def decryptMsg(self, encrypted):
+        decrypted = await crypto.auth_decrypt(self.wallet_handle, self.my_vk, encrypted)
+        # decrypted = await crypto.anon_decrypt(wallet_handle, my_vk, encrypted)
+        return (decrypted)
+#
+    async def init(self):
+        print('yoyoyo')
+        me = 'Mailagent'.strip()
+        self.wallet_config = '{"id": "%s-wallet"}' % me
+        self.wallet_credentials = '{"key": "%s-wallet-key"}' % me
+
+        # 1. Create Wallet and Get Wallet Handle
+        await wallet.delete_wallet(self.wallet_config, self.wallet_credentials)
+        await wallet.create_wallet(self.wallet_config, self.wallet_credentials)
+        self.wallet_handle = await wallet.open_wallet(self.wallet_config, self.wallet_credentials)
+        print('wallet = %s' % self.wallet_handle)
+
+        (self.my_did, self.my_vk) = await did.create_and_store_my_did(self.wallet_handle, "{}")
+        print('my_did and verkey = %s %s' % (self.my_did, self.my_vk))
+
+        self.their = input("Other party's DID and verkey? ").strip().split(' ')
+        return self.wallet_handle, self.my_did, self.my_vk, self.their[0], self.their[1]
+
+    def __init__(self):
+        try:
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(self.init())
+            time.sleep(1)  # waiting for libindy thread complete
+        except KeyboardInterrupt:
+            print('')
 
 def _get_config_from_cmdline():
     import argparse
@@ -116,5 +178,6 @@ def _configure():
 
 if __name__ == '__main__':
     cfg = _configure()
+    securemsg = SecureMsg()
     agent = Agent(cfg)
     agent.run()
