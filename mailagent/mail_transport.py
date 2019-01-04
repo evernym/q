@@ -100,6 +100,14 @@ _json_content_pat = re.compile(r'(?s)\s*({.*})')
 
 _bad_msgs_folder = 'bad_msgs'
 
+def _save_bad_msg(msg):
+    if not os.path.isdir(bad_msgs_folder):
+        os.makedirs(bad_msgs_folder)
+    fname = os.path.join(bad_msgs_folder, datetime.datetime.now().isoformat().replace(':', '-') + '.email')
+    with open(fname, 'wb') as f:
+        f.write(bytes(msg))
+    return fname
+
 def _find_a2a(msg):
     '''
     Look through an email to find the a2a message it contains. Return a mwc.MessageWithContext, which may
