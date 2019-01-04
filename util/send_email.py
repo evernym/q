@@ -6,6 +6,7 @@ import smtplib
 import os
 import asyncio
 import time
+import re
 
 from indy import crypto, did, wallet
 
@@ -141,6 +142,19 @@ def _apply_cfg(cfg, section, defaults):
             x[key] = src[key]
     return x
 
+async def demo(smtp):
+    while True:
+        argv = input('> ').strip().split(' ')
+        cmd = argv[0].lower()
+        if re.match(cmd, 'send'):
+            send(smtp['username'], smtp['password'], smtp['server'], smtp['port'], 'indyagent1@gmail.com', 'encrypted.dat', '1')
+        # elif re.match(cmd, 'decrypt'):
+        #     ##Code here
+        elif re.match(cmd, 'quit'):
+            break
+        else:
+            print('Huh?')
+
 _default_smtp_cfg = {
     'server': 'smtp.gmail.com',
     'username': 'your email',
@@ -159,5 +173,5 @@ securemsg = SecureMsg()
 loop = asyncio.get_event_loop()
 loop.run_until_complete(securemsg.encryptMsg('../mailagent/testFileToSend.json'))
 userInput = input("Enter 1 if you want to test sending msg via attached file.  Enter 2 if you want to send via email body: ")
-
-send(smtp_cfg['username'], smtp_cfg['password'], smtp_cfg['server'], smtp_cfg['port'], 'indyagent1@gmail.com', 'encrypted.dat', userInput)
+loop.run_until_complete(demo(smtp_cfg))
+# send(smtp_cfg['username'], smtp_cfg['password'], smtp_cfg['server'], smtp_cfg['port'], 'indyagent1@gmail.com', 'encrypted.dat', userInput)
