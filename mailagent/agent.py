@@ -46,6 +46,10 @@ class Agent():
             if candidates:
                 for handler in candidates:
                     if handler.handle(wc, self):
+                        resp = handler.handle(wc, self)
+                        msg_to_encrypt = handler_common.finish_msg(resp)
+                        encrypted = loop.run_until_complete(securemsg.encryptMsg(msg_to_encrypt))
+                        self.trans.send(encrypted, wc.sender, wc.in_reply_to, wc.subject)
                         handled = True
                         break
             if not handled:
@@ -83,37 +87,27 @@ class Agent():
             logging.info('Agent stopped.')
 
 class SecureMsg():
-#     async def encryptMsg(wallet_handle, my_vk, their_vk, msg):
-#         with open('plaintext.txt', 'w') as f:
-#             f.write(msg)
-#         with open('plaintext.txt', 'rb') as f:
-#             msg = f.read()
-#         encrypted = await
-#         crypto.anon_crypt(wallet_handle, my_vk, their_vk, msg)
-#         # encrypted = await crypto.anon_crypt(their_vk, msg)
-#         print('encrypted = %s' % repr(encrypted))
-#         with open('encrypted.dat', 'wb') as f:
-#             f.write(bytes(encrypted))
-#         print('prepping %s' % msg)
-#
-#     async def init():
-#
-#
-#     # Step 6 code goes here, replacing the read() stub.
+    async def encryptMsg(self, msg):
+        with open('plaintext.txt', 'w') as f:
+            f.write(msg)
+        with open('plaintext.txt', 'rb') as f:
+            msg = f.read()
+        encrypted = await crypto.auth_crypt(self.wallet_handle, self.my_vk, self.their_vk, msg)
+        return encrypted
+
     async def decryptMsg(self, encrypted):
         decrypted = await crypto.auth_decrypt(self.wallet_handle, self.my_vk, encrypted)
-        # decrypted = await crypto.anon_decrypt(wallet_handle, my_vk, encrypted)
         return (decrypted)
 #
     async def init(self):
-        print('yoyoyo')
-        me = 'Mailagent'.strip()
+        me = 'TestAgent'.strip()
         self.wallet_config = '{"id": "%s-wallet"}' % me
         self.wallet_credentials = '{"key": "%s-wallet-key"}' % me
 
-        # 1. Create Wallet and Get Wallet Handle
-        await wallet.delete_wallet(self.wallet_config, self.wallet_credentials)
-        await wallet.create_wallet(self.wallet_config, self.wallet_credentials)
+        try:
+            await wallet.create_wallet(self.wallet_config, self.wallet_credentials)
+        except:
+            pass
         self.wallet_handle = await wallet.open_wallet(self.wallet_config, self.wallet_credentials)
         print('wallet = %s' % self.wallet_handle)
 
@@ -121,7 +115,8 @@ class SecureMsg():
         print('my_did and verkey = %s %s' % (self.my_did, self.my_vk))
 
         self.their = input("Other party's DID and verkey? ").strip().split(' ')
-        return self.wallet_handle, self.my_did, self.my_vk, self.their[0], self.their[1]
+        self.their_vk = self.their[1]
+        return self.wallet_handle, self.my_did, self.my_vk , self.their[0], self.their[1]
 
     def __init__(self):
         try:
