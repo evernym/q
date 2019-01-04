@@ -33,14 +33,15 @@ class SecureMsg():
         return (decrypted)
 #
     async def init(self):
-        print('yoyoyo')
         me = 'Mailagent'.strip()
         self.wallet_config = '{"id": "%s-wallet"}' % me
         self.wallet_credentials = '{"key": "%s-wallet-key"}' % me
 
         # 1. Create Wallet and Get Wallet Handle
-        await wallet.delete_wallet(self.wallet_config, self.wallet_credentials)
-        await wallet.create_wallet(self.wallet_config, self.wallet_credentials)
+        try:
+            await wallet.create_wallet(self.wallet_config, self.wallet_credentials)
+        except:
+            pass
         self.wallet_handle = await wallet.open_wallet(self.wallet_config, self.wallet_credentials)
         print('wallet = %s' % self.wallet_handle)
 
@@ -155,8 +156,6 @@ smtp_cfg = _apply_cfg(cfg, 'smtp2', _default_smtp_cfg)
 
 # This is to send email to the agent.  Hence,
 # You can use your personal email
-print(os.getcwd())
-
 securemsg = SecureMsg()
 loop = asyncio.get_event_loop()
 loop.run_until_complete(securemsg.encryptMsg('../mailagent/testFileToSend.json'))
