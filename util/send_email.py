@@ -142,12 +142,21 @@ def _apply_cfg(cfg, section, defaults):
             x[key] = src[key]
     return x
 
+def init():
+    securemsg = SecureMsg()
+    loop.run_until_complete(securemsg.encryptMsg('../mailagent/testFileToSend.json'))
+    userInput = input("Enter 1 if you want to test sending msg via attached file.  Enter 2 if you want to send via email body: ")
+    return userInput
+
 async def demo(smtp):
     while True:
         argv = input('> ').strip().split(' ')
         cmd = argv[0].lower()
         if re.match(cmd, 'send'):
-            send(smtp['username'], smtp['password'], smtp['server'], smtp['port'], 'indyagent1@gmail.com', 'encrypted.dat', '1')
+            userInput =init()
+            # This is to send email to the agent.
+            # You can use your personal email
+            send(smtp['username'], smtp['password'], smtp['server'], smtp['port'], 'indyagent1@gmail.com', 'encrypted.dat', userInput)
         # elif re.match(cmd, 'decrypt'):
         #     ##Code here
         elif re.match(cmd, 'quit'):
@@ -162,16 +171,9 @@ _default_smtp_cfg = {
     'port': '587'
 }
 
+loop = asyncio.get_event_loop()
 home = expanduser("~")
 args = _get_config_from_cmdline()
 cfg = _get_config_from_file()
 smtp_cfg = _apply_cfg(cfg, 'smtp2', _default_smtp_cfg)
-
-# This is to send email to the agent.
-# You can use your personal email
-securemsg = SecureMsg()
-loop = asyncio.get_event_loop()
-loop.run_until_complete(securemsg.encryptMsg('../mailagent/testFileToSend.json'))
-userInput = input("Enter 1 if you want to test sending msg via attached file.  Enter 2 if you want to send via email body: ")
 loop.run_until_complete(demo(smtp_cfg))
-# send(smtp_cfg['username'], smtp_cfg['password'], smtp_cfg['server'], smtp_cfg['port'], 'indyagent1@gmail.com', 'encrypted.dat', userInput)
