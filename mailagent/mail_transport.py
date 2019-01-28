@@ -163,7 +163,7 @@ def _find_a2a(msg):
             msg.get('from', 'unknown sender'), msg.get('date', 'at unknown time'), msg.get('subject', 'empty')
         ))
 
-    wc.subject = 're: ' + msg.get('subject')
+    wc.subject = msg.get('subject')
     wc.in_reply_to = msg.get('message-id')
     if not wc.sender:
         wc.sender = msg.get('from')
@@ -243,8 +243,7 @@ class MailTransport:
                 test = True
                 filter_criteria = '(SUBJECT ' + '\"' + 'test-wallet' + '\")'
                 message_ids = _check_imap_ok(m.uid('SEARCH', None, filter_criteria))
-                temp = message_ids[0]
-                if message_ids[0] == b'':
+                if not message_ids:
                     message_ids = _check_imap_ok(m.uid('SEARCH', None, 'ALL'))
                     test = False
                 # if initial == True:
@@ -311,8 +310,7 @@ class MailTransport:
                                     #
                                     # meta = await did.list_my_dids_with_meta(wallet_handle)
                                     # print(meta)
-                                msg_data = _check_imap_ok(m.uid('FETCH', this_id, '(RFC822)'))
-                                raw = msg_data[0][1]
+
                                 self.queue.push(raw)
                                 to_trash.append(this_id)
                         # If we downloaded anything, return first item.

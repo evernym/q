@@ -24,7 +24,6 @@ class Agent():
         if not transport:
             transport = mail_transport.MailTransport(cfg)
         self.trans = transport
-        self.testingSession = False
 
     def handle_msg(self, wc):
         # Record when we received this message.
@@ -45,13 +44,8 @@ class Agent():
                     if handler.handle(wc, self):
                         resp = handler.handle(wc, self)
                         msg_to_encrypt = handler_common.finish_msg(resp)
-                        print("testgin session is : ", self.testingSession)
-                        if self.testingSession:
-                            #we won't know the their_vk during the testing process.  Send insecure msg
-                            self.trans.send(msg_to_encrypt, wc.sender, wc.in_reply_to, wc.subject)
-                        else:
-                            encrypted = loop.run_until_complete(self.securemsg.encryptMsg(msg_to_encrypt))
-                            self.trans.send(encrypted, wc.sender, wc.in_reply_to, wc.subject)
+                        encrypted = loop.run_until_complete(self.securemsg.encryptMsg(msg_to_encrypt))
+                        self.trans.send(encrypted, wc.sender, wc.in_reply_to, wc.subject)
                         handled = True
                         break
             if not handled:
@@ -69,30 +63,26 @@ class Agent():
     def fetch_msg(self):
         return self.trans.receive()
 
-    async def open_received_wallet(self):
-        await wallet.close_wallet(securemsg.wallet_handle)
-        client = "test"
-        securemsg.wallet_config = '{"id": "%s-wallet"}' % client
-        securemsg.wallet_credentials = '{"key": "%s-wallet-key"}' % client
-        securemsg.wallet_handle = await wallet.open_wallet(securemsg.wallet_config, securemsg.wallet_credentials)
-
-        print('wallet = %s' % securemsg.wallet_handle)
-
-        meta = await did.list_my_dids_with_meta(securemsg.wallet_handle)
-        res = json.loads(meta)
-
-        securemsg.my_did = res[0]["did"]
-        securemsg.my_vk = res[0]["verkey"]
-        self.testingSession = True
-
-    def run(self):
+    async def run(self):
         logging.info('Agent started.')
         try:
             while True:
                 try:
                     wc = self.fetch_msg()
                     if wc == "test":
-                        loop.run_until_complete(self.open_received_wallet())
+                        await wallet.close_wallet(securemsg.wallet_handle)
+                        client = "test"
+                        securemsg.wallet_config = '{"id": "%s-wallet"}' % client
+                        securemsg.wallet_credentials = '{"key": "%s-wallet-key"}' % client
+                        securemsg.wallet_handle = await wallet.open_wallet(securemsg.wallet_config, securemsg.wallet_credentials)
+
+                        print('wallet = %s' % securemsg.wallet_handle)
+
+                        meta = await did.list_my_dids_with_meta(securemsg.wallet_handle)
+                        res = json.loads(meta)
+
+                        securemsg.my_did = res[0]["did"]
+                        securemsg.my_vk = res[0]["verkey"]
 
                     elif wc:
                         self.handle_msg(wc)
@@ -203,5 +193,5 @@ if __name__ == '__main__':
     securemsg = SecureMsg()
     agent = Agent(cfg, securemsg=securemsg)
     loop = asyncio.get_event_loop()
-    agent.run()
+    loop.run_until_complete(agent.run())
     # agent.run()
