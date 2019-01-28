@@ -7,6 +7,8 @@ import os
 import asyncio
 import time
 import re
+import json
+import logging
 
 from indy import crypto, did, wallet
 
@@ -15,6 +17,9 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
+
+# from .mail_transport import *
+import mail_transport
 
 class SecureMsg():
     async def encryptMsg(self, decrypted):
@@ -48,6 +53,12 @@ class SecureMsg():
 
         (self.my_did, self.my_vk) = await did.create_and_store_my_did(self.wallet_handle, "{}")
         print('my_did and verkey = %s %s' % (self.my_did, self.my_vk))
+        did_vk = {}
+        did_vk["did"] = self.my_did
+        did_vk["my_vk"] = self.my_vk
+
+        with open("start_connection.json", 'w') as outfile:
+            json.dump(did_vk, outfile)
 
         self.their = input("Other party's DID and verkey? ").strip().split(' ')
         self.their_vk = self.their[1]
@@ -61,39 +72,29 @@ class SecureMsg():
         except KeyboardInterrupt:
             print('')
 
-def send(senderEmail, senderPwd, server, port, dest, fileName, userInput):
-    userInput = int(userInput)
+def send(senderEmail, senderPwd, server, port, dest, fileName):
     filename = fileName
     attachment = open(filename, "rb")
 
     # instance of MIMEMultipart
     m = MIMEMultipart()
 
-    if userInput == 1:
         # attach the body with the msg instance
-        m.attach(MIMEText('See attached file.', 'plain'))
+    m.attach(MIMEText('See attached file.', 'plain'))
 
-        # instance of MIMEBase and named as p
-        p = MIMEBase('application', 'octet-stream')
+    # instance of MIMEBase and named as p
+    p = MIMEBase('application', 'octet-stream')
 
-        # To change the payload into encoded form
-        p.set_payload((attachment).read())
+    # To change the payload into encoded form
+    p.set_payload((attachment).read())
 
-        # encode into base64
-        encoders.encode_base64(p)
+    # encode into base64
+    encoders.encode_base64(p)
 
-        p.add_header('Content-Disposition', "attachment; filename=msg.ap")
+    p.add_header('Content-Disposition', "attachment; filename=msg.ap")
 
-        # attach the instance 'p' to instance 'msg'
-        m.attach(p)
-
-    elif userInput == 2:
-        # attach the body with the msg instance
-        body = '{"@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/tictactoe/1.0/move", "@id": "518be002-de8e-456e-b3d5-8fe472477a86", "ill_be": "X", "moves": ["X:B2"],"comment_ltxt": "Let\'s play tic-tac-to. I\'ll be X. I pick cell B2."}'
-        m.attach(MIMEText(body, 'plain'))
-
-    else:
-        raise Exception("Wrong Input")
+    # attach the instance 'p' to instance 'msg'
+    m.attach(p)
 
     # storing the senders email address.
     m['From'] = senderEmail  # TODO: get from config
@@ -119,6 +120,31 @@ def send(senderEmail, senderPwd, server, port, dest, fileName, userInput):
     # terminating the session
     s.quit()
 
+def fetch_msg(trans, svr, ssl, username, password, their_email):
+    return trans.receive(svr, ssl, username, password, their_email)
+
+def run(svr, ssl, username, password, their_email):
+    incoming_email = None
+    transport = None
+    if not transport:
+        transport = mail_transport.MailTransport()
+    trans = transport
+    logging.info('Agent started.')
+    try:
+        # while True:
+        ###
+        wc = fetch_msg(trans, svr, ssl, username, password, their_email)
+        ###
+        if wc:
+            incoming_email = wc.msg
+            print('incoming_email is:')
+            print(incoming_email)
+        else:
+            time.sleep(2.0)
+    except:
+        logging.info('Agent stopped.')
+    return incoming_email
+
 def _get_config_from_cmdline():
     import argparse
     parser = argparse.ArgumentParser(description="Run a Hyperledger Indy agent that communicates by email.")
@@ -142,23 +168,27 @@ def _apply_cfg(cfg, section, defaults):
             x[key] = src[key]
     return x
 
-def init():
-    securemsg = SecureMsg()
-    loop.run_until_complete(securemsg.encryptMsg('../mailagent/testFileToSend.json'))
-    userInput = input("Enter 1 if you want to test sending msg via attached file.  Enter 2 if you want to send via email body: ")
-    return userInput
+def setUp():
+    print ("securemsg")
+    loop.run_until_complete(securemsg.encryptMsg('testFileToSend.json'))
 
-async def demo(smtp):
+def demo(smtp, imap):
     while True:
         argv = input('> ').strip().split(' ')
         cmd = argv[0].lower()
         if re.match(cmd, 'send'):
-            userInput =init()
+            print("here is where I set userInput - init")
             # This is to send email to the agent.
             # You can use your personal email
-            send(smtp['username'], smtp['password'], smtp['server'], smtp['port'], 'indyagent1@gmail.com', 'encrypted.dat', userInput)
-        # elif re.match(cmd, 'decrypt'):
-        #     ##Code here
+            send(smtp['username'], smtp['password'], smtp['server'], smtp['port'], 'indyagent1@gmail.com', 'encrypted.dat')
+        elif re.match(cmd, 'decrypt'):
+            encrypted_msg = run(imap['server'], imap['ssl'], imap['username'], imap['password'], 'indyagent1@gmail.com')
+            print(encrypted_msg[0])
+            decrypted_msg = loop.run_until_complete(securemsg.decryptMsg(encrypted_msg))
+            print(decrypted_msg)
+            decrypted_msg_obj = json.loads(decrypted_msg[1].decode("utf-8"))
+            print('decrypted_msg_obj is:  ')
+            print(decrypted_msg_obj)
         elif re.match(cmd, 'quit'):
             break
         else:
@@ -171,9 +201,33 @@ _default_smtp_cfg = {
     'port': '587'
 }
 
+_default_imap_cfg = {
+    'server': 'imap.gmail.com',
+    'username': 'indyagent1@gmail.com',
+    'password': 'invalid password',
+    'ssl': '1',
+    'port': '993'
+}
+
 loop = asyncio.get_event_loop()
 home = expanduser("~")
 args = _get_config_from_cmdline()
 cfg = _get_config_from_file()
 smtp_cfg = _apply_cfg(cfg, 'smtp2', _default_smtp_cfg)
-loop.run_until_complete(demo(smtp_cfg))
+imap_cfg = _apply_cfg(cfg, 'imap2', _default_imap_cfg)
+securemsg = SecureMsg()
+setUp()
+
+def test_all():
+    loop = asyncio.get_event_loop()
+    home = expanduser("~")
+    args = _get_config_from_cmdline()
+    cfg = _get_config_from_file()
+    smtp_cfg = _apply_cfg(cfg, 'smtp2', _default_smtp_cfg)
+    imap_cfg = _apply_cfg(cfg, 'imap2', _default_imap_cfg)
+    securemsg = SecureMsg()
+    setUp()
+
+
+while True:
+    demo(smtp_cfg, imap_cfg)
