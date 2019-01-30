@@ -3,9 +3,27 @@
     <link rel="stylesheet" type="text/css" href="/default.css">
     <link rel="icon" type="image/png" href="/favicon.png">
     <title>HTTP Relay - Pending</title>
+    <script>
+var rootLoc = "%(Location)s";
+    </script>
+    <script src="/poll.js"></script>
 </head>
 <body>
+<div id="busy" style="display:none">
+    <h1>Long polling for response</h1>
+    <div style="border:1px solid #606060; background-color:#e8e8e8">
+        <div style="display:inline-block; background-color: #c0c0ff" id="progress">&nbsp;</div>
+    </div>
+</div>
+<div id="pending">
     <h1>200 OK</h1>
-    <p>Request is still pending. <a href="javascript:location.reload(true);">Poll status again</a>.</p>
+    <p>Request is still pending. Poll status again at <a href="javascript:refresh();">%(Location)s</a>.</p>
+</div>
+<div id="final" style="display:none">
+    <h1>303 See Other</h1>
+    <p id="outcome">Response completed at <a id="final_url" href="#"></a>.<br>
+    <textarea rows="10" id="response"></textarea></p>
+    <p>[ <a href="/">Start Over</a> ]</p>
+</div>
 </body>
 </html>

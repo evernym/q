@@ -1,8 +1,8 @@
 <html>
 <head profile="http://www.w3.org/2005/10/profile">
-<link rel="stylesheet" type="text/css" href="/default.css">
-<link rel="icon" type="image/png" href="/favicon.png">
-<title>HTTP Relay</title>
+    <link rel="stylesheet" type="text/css" href="/default.css">
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <title>HTTP Relay</title>
 </head>
 <body>
 <h1>HTTP Relay</h1>
@@ -25,12 +25,53 @@
       response is received.</li>
   <li>When a response is available, a GET will return <code>303 See Other</code>,
       with a new <code>Location</code> header that gives a place where the
-      response can be fetched.</li>
+      response can be fetched. Following this redirect yields another
+      <code>200 OK</code>, with the response body containing the response.
+      (This redirect is <a target="_blank" href="https://stackoverflow.com/a/3820674/2953158">
+      transparently followed by browsers and Ajax-like code</a>, but may not be followed
+      by client code in various programming languages. You can <a target="_blank"
+      href="https://stackoverflow.com/a/8056313/2953158">detect whether you have been
+      redirected</a> by checking the <code>.responseURL</code> property of your XMLHTTPRequest
+      object to see if it contains "/resp/" (in which case you've followed a redirect, and
+      the <code>.responseText</code> property will contain the response body.)
+  </li>
 </ul>
+<hr>
 <h2>POST a message to /req</h2>
-<form action="/in" method="post">
-    <textarea rows="10" cols="80" name="msg"></textarea><br>
+<form action="/req" method="post">
+    [ <span id="message_type_menu"></span> ]
+    <textarea id="msg" rows="10" name="msg"></textarea><br>
     <input type="submit" value="Submit"/>
 </form>
+<script>
+message_types = ["trust_ping", "connection_invitation"];
+function $(id) {
+  return document.getElementById(id);
+}
+function load_menu() {
+    menu = "";
+    var i;
+    for (i = 0; i < message_types.length; i++) {
+        if (i > 0) {
+            menu += " | ";
+        }
+        menu += "<a href=\"javascript:load('" + message_types[i] + "')\">" + message_types[i] + "</a>";
+    }
+    $('message_type_menu').innerHTML = menu;
+}
+function load(which) {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4) {
+      if (this.status == 200) {
+        $('msg').innerHTML = this.responseText;
+      }
+    }
+  };
+  xhttp.open("GET", which + ".json", true);
+  xhttp.send();
+}
+load_menu();
+</script>
 </body>
 </html>
