@@ -14,16 +14,16 @@ import sys
 # Support running mail transport either from its location
 # relative to this utility, or from CWD, or from same folder
 # as this script.
-TRANSPORT = 'mail_transport.py'
+TRANSPORT = 'file_transport.py'
 MY_FOLDER = os.path.abspath(os.path.dirname(__file__))
 IMPORT_FOLDERS = ['.', MY_FOLDER, os.path.abspath(os.path.join(MY_FOLDER, '../../mailagent'))]
 for folder in IMPORT_FOLDERS:
     if os.path.isfile(os.path.join(folder, TRANSPORT)):
         sys.path.append(folder)
         break
-import mail_transport
+import file_transport
 
-PORT = 8001
+PORT = 8000
 
 PENDING_PAT = re.compile('(?i)/pending/([a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12})$')
 IN_PAT = re.compile('(?i)/in/?$')
@@ -36,27 +36,28 @@ def _match_special(path):
             return m, pat
     return None, None
 
-
-trans = mail_transport.MailTransport(queue=mail_transport.MailQueue(os.path.expanduser('~/.httprelay/queue')))
+trans = file_transport.FileTransport(os.path.expanduser('~/.httprelay/queue'))
 
 class Handler(http.server.SimpleHTTPRequestHandler):
-
-    def translate_path(self, path):
-        m = OUT_PAT.match(path)
-        if m:
-            return trans.queue.path_for_id(m.group(1))
-        return super().translate_path(path)
 
     def do_GET(self):
         try:
             m, pat = _match_special(self.path)
             if m:
+                id = m.group(1)
+                ready = trans.peek(id)
                 if pat == OUT_PAT:
-                    super().do_GET()
+                    if ready:
+                        mwc = trans.receive(id)
+                        self.send_response(200)
+                        self.send_header('Content-Type', 'application/ssi-agent-wire')
+                        self.send_header('Content-Length', len(mwc.msg))
+                        self.end_headers()
+                        self.wfile.write(mwc.msg)
+                    else:
+                        self.send_error(404, 'Response not yet available.')
                 elif pat == PENDING_PAT:
-                    id = m.group(1)
-                    path = trans.queue.path_for_id(id)
-                    if os.path.isfile(path):
+                    if ready:
                         self.send_status(303, {'Location':'/out/' + id})
                     else:
                         self.send_status(200)
@@ -73,31 +74,32 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             m, pat = _match_special(self.path)
             if m:
                 if pat == IN_PAT:
-                    id = str(uuid.uuid4())
                     clen = int(self.headers.get('Content-Length', 0))
                     ct = self.headers.get('Content-Type', 'application/octet-stream')
+                    txt = None
                     if clen:
                         postvars = None
                         ctype, pdict = cgi.parse_header(ct)
                         if ctype == 'multipart/form-data':
                             postvars = cgi.parse_multipart(self.rfile, pdict)
                         elif ctype == 'application/x-www-form-urlencoded':
-                            postvars = urllib.parse.parse_qs(self.rfile.read(clen), keep_blank_values=1)
+                            postvars = urllib.parse.parse_qs(self.rfile.read(clen))
                         else:
                             txt = self.rfile.read(clen).decode('utf-8')
                         if postvars is not None:
-                            if len(postvars):
-                                txt = postvars.get('msg', postvars.keys()[0])
-                            else:
-                                txt = ''
-                        trans.queue.push(txt.encode('utf-8'), id)
-                    link = '/pending/' + id
-                    self.send_status(202, {'Location':link})
+                            matches = postvars.get('msg', postvars.get(b'msg', ''))
+                            if matches:
+                                txt = matches[0]
+                    if txt:
+                        id = trans.send(txt)
+                        link = '/pending/' + id
+                        self.send_status(202, {'Location':link})
+                    else:
+                        self.send_error(400, explain='No useful payload. Expected msg from form or query string')
                 else:
                     self.send_error(405, explain='You must use GET with %s' % self.path)
             else:
                 self.send_error(404)
-                self.send_response()
         except:
             self.send_error(500, explain=traceback.format_exc())
     
@@ -116,19 +118,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 if __name__ == '__main__':
     # Change the format of error messages so they use our preferred style.
-    http.server.BaseHTTPRequestHandler.error_message_format = '''<html>
-<head profile="http://www.w3.org/2005/10/profile">
-    <link rel="stylesheet" type="text/css" href="/default.css">
-    <link rel="icon" type="image/png" href="/favicon.png">
-    <title>HTTP Relay - Error %(code)d</title>
-</head>
-<body>
-    <h1>HTTP Relay - Error %(code)d</h1>
-    <p>Message: %(message)s.</p>
-    <p>Error code explanation: %(code)s - %(explain)s.</p>
-</body>
-</html>
-'''
+    with open(os.path.join(MY_FOLDER, 'error.html'), 'rt') as f:
+        http.server.BaseHTTPRequestHandler.error_message_format = f.read()
+    # Run a server until Ctrl+C
     with socketserver.TCPServer(("", PORT), Handler) as httpd:
         try:
             try:

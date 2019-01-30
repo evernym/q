@@ -6,14 +6,11 @@ import re
 import logging
 import smtplib
 from os.path import expanduser
-from shutil import copy
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 import zipfile
-from indy import crypto, did, wallet
-
 
 import agent_common
 import mtc

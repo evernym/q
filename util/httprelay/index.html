@@ -11,7 +11,7 @@
  href="https://github.com/dhh1128/indy-hipe/blob/mediators-and-relays/text/mediators-and-relays/README.md">
         this HIPE draft</a> for more information about relays.</p>
 <p>Agents wishing to contact the relayed
- agent should make HTTP POSTs to <code>http://&lt;ipaddr&gt;:&lt;port&gt;/in</code>,
+ agent should make HTTP POSTs to <code>http://&lt;ipaddr&gt;:&lt;port&gt;/req</code>,
  where the body of the request is the raw bytes of an <a target="_blank"
  href="https://github.com/hyperledger/indy-hipe/tree/master/text/0026-agent-file-format#agent-wire-messages-aw">
         A2A Wire Message</a>. Handling will follow a <a target="_blank"
@@ -27,7 +27,7 @@
       with a new <code>Location</code> header that gives a place where the
       response can be fetched.</li>
 </ul>
-<h2>POST a message to /in</h2>
+<h2>POST a message to /req</h2>
 <form action="/in" method="post">
     <textarea rows="10" cols="80" name="msg"></textarea><br>
     <input type="submit" value="Submit"/>
