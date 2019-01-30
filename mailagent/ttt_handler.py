@@ -44,7 +44,6 @@ def handle(wc, agent):
                 resp = start_msg(MOVE_MSG_TYPE, thid)
                 resp['me'] = me
                 resp['moves'] = g.dump()
-            agent.trans.send(finish_msg(resp), wc.sender, wc.in_reply_to, wc.subject)
     except Exception as e:
         agent.trans.send(problem_report(wc, str(e)), wc.sender, wc.in_reply_to, wc.subject)
-    return True
+    return resp
