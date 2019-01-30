@@ -1,0 +1,15 @@
+body {
+    background-color: white;
+    color: #404040;
+    font-family: Verdana; Arial; Sans-Serif;
+    font-size: 12pt;
+    padding: 1em;
+}
+h1 {
+    padding-top: 8px;
+    height: 32px;
+    font-size: 16px;
+    background-image: url(favicon.png);
+    background-repeat: no-repeat;
+    padding-left: 40px;
+}

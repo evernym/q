@@ -73,11 +73,15 @@ class MailQueue:
         self.folder = folder
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)
-    def push(self, bytes):
-        fname = datetime.datetime.now().isoformat().replace(':', '-') + '.email'
-        path = os.path.join(self.folder, fname)
+    def path_for_id(self, id):
+        return os.path.join(self.folder, id + '.email')
+    def push(self, bytes, id=None):
+        if not id:
+            id = datetime.datetime.now().isoformat().replace(':', '-')
+        path = os.path.join(self.folder, id + '.email')
         with open(path, 'wb') as f:
             f.write(bytes)
+        return id
     def pop(self):
         items = os.listdir(self.folder)
         if items:

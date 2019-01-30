@@ -1,0 +1,36 @@
+<html>
+<head profile="http://www.w3.org/2005/10/profile">
+<link rel="stylesheet" type="text/css" href="/default.css">
+<link rel="icon" type="image/png" href="/favicon.png">
+<title>HTTP Relay</title>
+</head>
+<body>
+<h1>HTTP Relay</h1>
+<p>This simple web server speaks HTTP on behalf of a <em>relayed agent</em>
+ that uses a different transport. See <a target="_blank"
+ href="https://github.com/dhh1128/indy-hipe/blob/mediators-and-relays/text/mediators-and-relays/README.md">
+        this HIPE draft</a> for more information about relays.</p>
+<p>Agents wishing to contact the relayed
+ agent should make HTTP POSTs to <code>http://&lt;ipaddr&gt;:&lt;port&gt;/in</code>,
+ where the body of the request is the raw bytes of an <a target="_blank"
+ href="https://github.com/hyperledger/indy-hipe/tree/master/text/0026-agent-file-format#agent-wire-messages-aw">
+        A2A Wire Message</a>. Handling will follow a <a target="_blank"
+ href="http://restcookbook.com/Resources/asynchroneous-operations/">
+ familiar recipe for asynchronous REST</a>:</p>
+<ul>
+  <li>Return <code>202 Accepted</code> with a <code>Location</code>
+      header telling where status can be polled.</li>
+  <li>GETs to that status polling <code>Location</code> will return
+      <code>200 OK</code> with a report of pending status until a
+      response is received.</li>
+  <li>When a response is available, a GET will return <code>303 See Other</code>,
+      with a new <code>Location</code> header that gives a place where the
+      response can be fetched.</li>
+</ul>
+<h2>POST a message to /in</h2>
+<form action="/in" method="post">
+    <textarea rows="10" cols="80" name="msg"></textarea><br>
+    <input type="submit" value="Submit"/>
+</form>
+</body>
+</html>
