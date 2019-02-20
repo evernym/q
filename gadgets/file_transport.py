@@ -45,9 +45,8 @@ class FileTransport:
         sending and receiving.
 
         :param folder: Container for subdirs where messages should be
-          read from and and written to. It will be created, along
-          with subdirs named req and resp, if folder structure does
-          not exist.
+          read from and and written to. It must exist, but its subdirs
+          will be created automatically, if they do not exist.
         :param folder_is_destward: Tells whether to treat the folder as
           destward or srcward, relative to the owner of this transport
           object. This parameter exists so the same folder can be used
@@ -70,6 +69,8 @@ class FileTransport:
                FileTransport that is srcward of the agent (read from /a)                                 
         '''
         folder = os.path.normpath(os.path.abspath(folder))
+        if not os.path.isdir(folder):
+            raise ValueError('Folder "%s" does not exist.' % folder)
         self.a_dir = os.path.join(folder, 'a')
         self.b_dir = os.path.join(folder, 'b')
         self.folder_is_destward = folder_is_destward

@@ -5,34 +5,59 @@ any different transport, for arbitrary testing scenarios.
 import sys
 import argparse
 import re
+import os
+import time
 
-EMAIL_PAT = re.compile('^[A-Za-z0-9][^@]*@[^.@]+[.][^@]*$')
+import file_transport
+
+IMAP_PAT = re.compile('^([A-Za-z0-9][^@:]*):([^@]*)@(.+):([0-9]{1,5})$')
+SMTP_PAT = re.compile('^[A-Za-z0-9][^@]*@[^.@]+[.][^@]*$')
 HTTP_PAT = re.compile('https?://.+$')
 
-
 def relay(src, dests):
-    msg = src.receive()
-    for dest in dests:
-        dest.send(msg)
+    mwc = src.receive()
+    if mwc is not None:
+        for dest in dests:
+            dest.send(mwc.msg)
+        return mwc
 
-def load_transport(t):
+def load_transport(t, is_dest):
+    if IMAP_PAT.match(t):
+        raise ValueError('IMAP transport not yet supported.')
+    if SMTP_PAT.match(t):
+        raise ValueError('SMTP transport not yet supported.')
+    elif HTTP_PAT.match(t):
+        raise ValueError('Mail transport not yet supported.')
+    else:
+        if not os.path.isdir(t):
+            raise ValueError('Folder "%s" does not exist.' % t)
+        return file_transport.FileTransport(t, is_dest)
     pass
 
-if __name__ == '__main__':
+def main(argv, interrupter=None):
     try:
         parser = argparse.ArgumentParser(description=
-            'Relay agent messages from a source to one or more dest transports.')
-        parser.add_argument('src', metavar='SRC', type=str, nargs=1,
-                            help='A source like http://localhost:8080 or me@example.com' + \
-                                 ' or ~/myfolder. The transport will be detected based on' + \
-                                 ' argument type.')
+            'Relay agent messages from a source to one or more destinations, possibly changing' + \
+            ' transports in the process. Transports will be detected based on argument formats.')
+        parser.add_argument('src', metavar='SRC', type=str,
+                            help='A source like http://localhost:8080 or user:pass@imapserver:port' + \
+                                 ' or ~/myfolder.')
         parser.add_argument('dest', metavar='DEST', type=str, nargs='+',
-                            help='A destination in the same format as SRC.')
+                            help='A destination like http://localhost:8080 or me@example.com' + \
+                                 ' or ~/myfolder.')
 
-        args = parser.parse_args()
-        src = load_transport(args.src)
-        dests = [load_transport(x) for x in args.dest]
+        args = parser.parse_args(argv)
+        src = load_transport(args.src, False)
+        dests = [load_transport(x, True) for x in args.dest]
         while True:
-            relay(src, dests)
+            msg = relay(src, dests)
+            if interrupter is not None:
+                if interrupter(msg):
+                    break
+            if not msg:
+                time.sleep(1)
     except KeyboardInterrupt:
         print('')
+
+if __name__ == '__main__':
+    main(sys.argv[1:])
