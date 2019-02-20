@@ -6,20 +6,24 @@ import time
 import random
 import http.server
 import socketserver
+import requests
 from unittest.mock import MagicMock, patch, call
 
 import helpers
 import polyrelay
 import file_transport
 
-class MessageCountdown:
-    def __init__(self, count=1):
+class Interrupter:
+    def __init__(self, count=1, timeout=5):
         self.count = count
+        self.expires = time.time() + timeout
     def __call__(self, msg):
         if msg:
             self.count -= 1
             if self.count < 1:
                 return True
+        if time.time() >= self.expires:
+            return True
 
 post_body_lock = threading.Lock()
 post_body_signal = threading.Condition(post_body_lock)
@@ -53,6 +57,7 @@ def start_web_server_for_one_request():
     def run_web_server():
         with socketserver.TCPServer(("", port), TrivialWebHandler) as httpd:
             try:
+                httpd.timeout = 3 #seconds
                 httpd.handle_request()
             finally:
                 httpd.socket.close()
@@ -68,11 +73,10 @@ class PolyRelayTest(unittest.TestCase):
     def tearDown(self):
         self.tempdir.cleanup()
 
-    def run_relay(self, dests):
+    def run_relay_from_file(self, dests):
         src = self.tempdir.name
-        interrupt_after_one_message = MessageCountdown()
         th = threading.Thread(target=polyrelay.main, args=([src] + dests,
-                interrupt_after_one_message))
+                Interrupter()))
         th.start()
         # If the relay is working properly, it will have created a src FileTransport
         # with folder_is_destward=False. This means it will expect to *read* messages
@@ -92,7 +96,7 @@ class PolyRelayTest(unittest.TestCase):
             destdirs.append(x)
             dests.append(x.name)
         try:
-            self.run_relay(dests)
+            self.run_relay_from_file(dests)
             # Now we want to check whether the message has been written to each dest.
             # The dest FileTransport will have been created with folder_is_destward
             # =True. This means it will have written its message to the /a subdir.
@@ -113,19 +117,38 @@ class PolyRelayTest(unittest.TestCase):
 
     def test_to_email_with_mock(self):
         with patch('smtp_sender.smtplib.SMTP', autospec=True) as p:
-            self.run_relay(['smtp://user:pass@mail.my.org:234?from=sender@x.com&to=recipient@y.com'])
+            self.run_relay_from_file(['smtp://user:pass@mail.my.org:234?from=sender@x.com&to=recipient@y.com'])
             # Guarantee that we exited normally and that we did in fact call
             # the SMTP object's quit() method.
             p.assert_has_calls([call().quit()])
 
     def test_to_http(self):
         port, thread = start_web_server_for_one_request()
-        self.run_relay(["http://localhost:%d" % port])
+        self.run_relay_from_file(["http://localhost:%d" % port])
         # Wait for up to 2 secs for a post to be processed by our mini web server.
         with post_body_signal:
             post_body_signal.wait_for(lambda: post_body_ready, timeout=2)
         global post_body
         self.assertEqual(post_body, b"hello")
+
+    def test_from_http(self):
+        dests = [self.tempdir.name]
+        port = random.randint(10000,65000)
+        src = "http://localhost:%d" % port
+        th = threading.Thread(target=polyrelay.main, args=([src, self.tempdir.name], Interrupter()))
+        th.start()
+        r = requests.post(src, headers={'content-length':'5'}, data="hello")
+        # Now wait for the relay to process the message, get interrupted, and exit
+        # its main loop.
+        th.join()
+        # If the relay worked properly, it will have received the http post, and will
+        # have created a dest FileTransport with folder_is_destward=True. This means
+        # it wrote messages to its /a subdir. To read something there easily,
+        # we create a new FileTransport that has folder_is_destward=False. It will
+        # *read* from the /a subdir.
+        f = file_transport.FileTransport(self.tempdir.name, folder_is_destward=False)
+        f.receive("hello")
+        self.assertEqual(f.receive().msg, b'hello')
 
 if __name__ == '__main__':
     unittest.main()

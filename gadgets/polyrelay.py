@@ -11,6 +11,7 @@ import time
 
 import file_transport
 import http_sender
+import http_receiver
 import smtp_sender
 
 IMAP_PAT = re.compile('^([A-Za-z0-9][^@:]*):([^@]*)@(.+):([0-9]{1,5})$')
@@ -23,19 +24,28 @@ def relay(src, dests):
         return mwc
 
 def load_transport(t, is_dest):
+    http_matched = False
     if IMAP_PAT.match(t):
         raise ValueError('IMAP transport not yet supported.')
-    if smtp_sender.PAT.match(t):
+    elif smtp_sender.PAT.match(t):
         if is_dest:
             return smtp_sender.SmtpSender(t)
         else:
             raise ValueError("SMTP transport can only be a dest, not a source. Use IMAP instead.")
-    elif http_sender.PAT.match(t):
+    if http_receiver.PAT.match(t):
+        if not is_dest:
+            return http_receiver.HttpReceiver(t)
+        else:
+            http_matched = True
+    if http_sender.PAT.match(t):
         if is_dest:
             return http_sender.HttpSender(t)
         else:
-            raise ValueError('HTTP transport not yet supported as a source.')
+            http_matched = True
+    if http_matched:
+        raise ValueError("HTTP arg reverses src and dest syntax.")
     else:
+        t = os.path.expanduser(t)
         if not os.path.isdir(t):
             raise ValueError('Folder "%s" does not exist.' % t)
         return file_transport.FileTransport(t, is_dest)
@@ -50,7 +60,7 @@ def main(argv, interrupter=None):
                             help='A source like http://localhost:8080 or ~/myfolder' + \
                                  ' or imap://user:pass@imapserver:port.')
         parser.add_argument('dest', metavar='DEST', type=str, nargs='+',
-                            help='A destination like http://localhost:8080 or ~/myfolder or' + \
+                            help='A destination like https://x.com/abc or ~/myfolder or' + \
                                  'smtp://user:pass@mail.my.org:234?from=sender@x.com&to=recipient@y.com.')
 
         args = parser.parse_args(argv)
@@ -60,6 +70,8 @@ def main(argv, interrupter=None):
             msg = relay(src, dests)
             if interrupter is not None:
                 if interrupter(msg):
+                    if isinstance(src, http_receiver.HttpReceiver):
+                        src.stop_serving()
                     break
             if not msg:
                 time.sleep(1)
