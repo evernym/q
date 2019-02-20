@@ -29,5 +29,6 @@ agent reacts. Record and playback agent behaviors by doing
 simple file I/O.
 
 ### polyrelay
-A pluggable relay lets you translate any agent transport into
-any different transport, for arbitrary testing scenarios.
+A pluggable relay that lets you translate any agent transport
+into different transports (either 1-to-1, or teeing 1-to-many),
+for arbitrary testing scenarios.
