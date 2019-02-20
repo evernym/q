@@ -1,4 +1,7 @@
 import requests
+import re
+
+PAT = re.compile('https?://.+$')
 
 class HttpSender:
     def __init__(self, endpoint):

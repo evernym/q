@@ -6,6 +6,7 @@ import time
 import random
 import http.server
 import socketserver
+from unittest.mock import MagicMock, patch, call
 
 import helpers
 import polyrelay
@@ -67,8 +68,23 @@ class PolyRelayTest(unittest.TestCase):
     def tearDown(self):
         self.tempdir.cleanup()
 
-    def relay_to_and_from_files(self, dest_count):
+    def run_relay(self, dests):
         src = self.tempdir.name
+        interrupt_after_one_message = MessageCountdown()
+        th = threading.Thread(target=polyrelay.main, args=([src] + dests,
+                interrupt_after_one_message))
+        th.start()
+        # If the relay is working properly, it will have created a src FileTransport
+        # with folder_is_destward=False. This means it will expect to *read* messages
+        # from its /a subdir. To write something there easily, create a new FileTransport
+        # that has folder_is_destward=True. It will *write* to the /a subdir.
+        fsrc = file_transport.FileTransport(src)
+        fsrc.send("hello")
+        # Now wait for the relay to process the message, get interrupted, and exit
+        # its main loop.
+        th.join()
+
+    def relay_to_and_from_files(self, dest_count):
         destdirs = []
         dests = []
         for i in range(dest_count):
@@ -76,18 +92,7 @@ class PolyRelayTest(unittest.TestCase):
             destdirs.append(x)
             dests.append(x.name)
         try:
-            interrupt_after_one_message = MessageCountdown()
-            th = threading.Thread(target=polyrelay.main, args=([src] + dests, interrupt_after_one_message))
-            th.start()
-            # If the relay is working properly, it will have created a src FileTransport
-            # with folder_is_destward=False. This means it will expect to *read* messages
-            # from its /a subdir. To write something there easily, create a new FileTransport
-            # that has folder_is_destward=True. It will *write* to the /a subdir.
-            fsrc = file_transport.FileTransport(src)
-            fsrc.send("hello")
-            # Now wait for the relay to process the message, get interrupted, and exit
-            # its main loop.
-            th.join()
+            self.run_relay(dests)
             # Now we want to check whether the message has been written to each dest.
             # The dest FileTransport will have been created with folder_is_destward
             # =True. This means it will have written its message to the /a subdir.
@@ -106,19 +111,16 @@ class PolyRelayTest(unittest.TestCase):
     def test_tee(self):
         self.relay_to_and_from_files(3)
 
+    def test_to_email_with_mock(self):
+        with patch('smtp_sender.smtplib.SMTP', autospec=True) as p:
+            self.run_relay(['smtp://user:pass@mail.my.org:234?from=sender@x.com&to=recipient@y.com'])
+            # Guarantee that we exited normally and that we did in fact call
+            # the SMTP object's quit() method.
+            p.assert_has_calls([call().quit()])
+
     def test_to_http(self):
         port, thread = start_web_server_for_one_request()
-        src = self.tempdir.name
-        interrupt_after_one_message = MessageCountdown()
-        relay_thread = threading.Thread(target=polyrelay.main,
-                                        args=([src, "http://localhost:%d" % port], interrupt_after_one_message))
-        relay_thread.start()
-        # Send a message to the relay.
-        fsrc = file_transport.FileTransport(src)
-        fsrc.send("hello")
-        # Now wait for the relay to process the message, get interrupted, and exit
-        # its main loop.
-        relay_thread.join()
+        self.run_relay(["http://localhost:%d" % port])
         # Wait for up to 2 secs for a post to be processed by our mini web server.
         with post_body_signal:
             post_body_signal.wait_for(lambda: post_body_ready, timeout=2)

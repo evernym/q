@@ -11,10 +11,9 @@ import time
 
 import file_transport
 import http_sender
+import smtp_sender
 
 IMAP_PAT = re.compile('^([A-Za-z0-9][^@:]*):([^@]*)@(.+):([0-9]{1,5})$')
-SMTP_PAT = re.compile('^[A-Za-z0-9][^@]*@[^.@]+[.][^@]*$')
-HTTP_PAT = re.compile('https?://.+$')
 
 def relay(src, dests):
     mwc = src.receive()
@@ -26,9 +25,12 @@ def relay(src, dests):
 def load_transport(t, is_dest):
     if IMAP_PAT.match(t):
         raise ValueError('IMAP transport not yet supported.')
-    if SMTP_PAT.match(t):
-        raise ValueError('SMTP transport not yet supported.')
-    elif HTTP_PAT.match(t):
+    if smtp_sender.PAT.match(t):
+        if is_dest:
+            return smtp_sender.SmtpSender(t)
+        else:
+            raise ValueError("SMTP transport can only be a dest, not a source. Use IMAP instead.")
+    elif http_sender.PAT.match(t):
         if is_dest:
             return http_sender.HttpSender(t)
         else:
@@ -45,11 +47,11 @@ def main(argv, interrupter=None):
             'Relay agent messages from a source to one or more destinations, possibly changing' + \
             ' transports in the process. Transports will be detected based on argument formats.')
         parser.add_argument('src', metavar='SRC', type=str,
-                            help='A source like http://localhost:8080 or user:pass@imapserver:port' + \
-                                 ' or ~/myfolder.')
+                            help='A source like http://localhost:8080 or ~/myfolder' + \
+                                 ' or imap://user:pass@imapserver:port.')
         parser.add_argument('dest', metavar='DEST', type=str, nargs='+',
-                            help='A destination like http://localhost:8080 or me@example.com' + \
-                                 ' or ~/myfolder.')
+                            help='A destination like http://localhost:8080 or ~/myfolder or' + \
+                                 'smtp://user:pass@mail.my.org:234?from=sender@x.com&to=recipient@y.com.')
 
         args = parser.parse_args(argv)
         src = load_transport(args.src, False)
