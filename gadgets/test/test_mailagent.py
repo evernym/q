@@ -3,7 +3,7 @@ import json
 import re
 
 import helpers
-import agent
+import mailagent
 import mwc
 import handlers
 import tp_handler
@@ -25,7 +25,7 @@ class FakeTransport:
         return self.pop()
 
 t = FakeTransport()
-a = agent.Agent(transport=t)
+a = mailagent.Agent(transport=t)
 
 class AgentTest(unittest.TestCase):
 
