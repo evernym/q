@@ -66,7 +66,7 @@ class FileTransport:
                     |
           http -> relay -> FileTransport -> agent
                                               |
-               FileTransport that is srcward of the agent (read from /a)                                 
+               FileTransport is srcward of the agent (read from /a)
         '''
         folder = os.path.normpath(os.path.abspath(folder))
         if not os.path.isdir(folder):

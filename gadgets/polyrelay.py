@@ -1,7 +1,8 @@
 '''
-A pluggable relay lets you translate any agent transport into
+A pluggable relay that lets you translate any agent transport into
 any different transport, for arbitrary testing scenarios.
 '''
+
 import sys
 import argparse
 import re
@@ -9,6 +10,7 @@ import os
 import time
 
 import file_transport
+import http_sender
 
 IMAP_PAT = re.compile('^([A-Za-z0-9][^@:]*):([^@]*)@(.+):([0-9]{1,5})$')
 SMTP_PAT = re.compile('^[A-Za-z0-9][^@]*@[^.@]+[.][^@]*$')
@@ -27,7 +29,10 @@ def load_transport(t, is_dest):
     if SMTP_PAT.match(t):
         raise ValueError('SMTP transport not yet supported.')
     elif HTTP_PAT.match(t):
-        raise ValueError('Mail transport not yet supported.')
+        if is_dest:
+            return http_sender.HttpSender(t)
+        else:
+            raise ValueError('HTTP transport not yet supported as a source.')
     else:
         if not os.path.isdir(t):
             raise ValueError('Folder "%s" does not exist.' % t)

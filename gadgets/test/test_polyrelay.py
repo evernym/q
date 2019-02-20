@@ -4,6 +4,8 @@ import tempfile
 import threading
 import time
 import random
+import http.server
+import socketserver
 
 import helpers
 import polyrelay
@@ -17,6 +19,45 @@ class MessageCountdown:
             self.count -= 1
             if self.count < 1:
                 return True
+
+post_body_lock = threading.Lock()
+post_body_signal = threading.Condition(post_body_lock)
+post_body_ready = False
+post_body = None
+
+class TrivialWebHandler(http.server.SimpleHTTPRequestHandler):
+    def do_POST(self):
+        global post_body
+        global post_body_signal
+        clen = int(self.headers.get('Content-Length', 0))
+        with post_body_signal:
+            if clen:
+                post_body = self.rfile.read(clen)
+            else:
+                post_body = ''
+            self.send_response(202)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            self.wfile.write("202 OK".encode("utf-8"))
+            post_body_signal.notify_all()
+
+def start_web_server_for_one_request():
+    global post_body_lock
+    global post_body_ready
+    global post_body
+    with post_body_lock:
+        post_body = None
+        post_body_ready = False
+    port = random.randint(10000, 65000)
+    def run_web_server():
+        with socketserver.TCPServer(("", port), TrivialWebHandler) as httpd:
+            try:
+                httpd.handle_request()
+            finally:
+                httpd.socket.close()
+    thread = threading.Thread(target=run_web_server)
+    thread.start()
+    return (port, thread)
 
 class PolyRelayTest(unittest.TestCase):
 
@@ -64,6 +105,25 @@ class PolyRelayTest(unittest.TestCase):
 
     def test_tee(self):
         self.relay_to_and_from_files(3)
+
+    def test_to_http(self):
+        port, thread = start_web_server_for_one_request()
+        src = self.tempdir.name
+        interrupt_after_one_message = MessageCountdown()
+        relay_thread = threading.Thread(target=polyrelay.main,
+                                        args=([src, "http://localhost:%d" % port], interrupt_after_one_message))
+        relay_thread.start()
+        # Send a message to the relay.
+        fsrc = file_transport.FileTransport(src)
+        fsrc.send("hello")
+        # Now wait for the relay to process the message, get interrupted, and exit
+        # its main loop.
+        relay_thread.join()
+        # Wait for up to 2 secs for a post to be processed by our mini web server.
+        with post_body_signal:
+            post_body_signal.wait_for(lambda: post_body_ready, timeout=2)
+        global post_body
+        self.assertEqual(post_body, b"hello")
 
 if __name__ == '__main__':
     unittest.main()
