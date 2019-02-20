@@ -30,7 +30,7 @@ class TransportTest(unittest.TestCase):
 
     def test_request_response(self):
         requester = FT(self.tempdir.name)
-        responder = FT(self.tempdir.name, requester=False)
+        responder = FT(self.tempdir.name, folder_is_destward=False)
         id = requester.send('ping')
         # The requester should not see a response yet.
         self.assertFalse(requester.peek(id))
@@ -47,7 +47,7 @@ class TransportTest(unittest.TestCase):
         requester = FT(self.tempdir.name)
         requester.send('hello')
         self.assertFalse(requester.receive())
-        responder = FT(self.tempdir.name, requester=False)
+        responder = FT(self.tempdir.name, folder_is_destward=False)
         mwc = responder.receive()
         self.assertEqual('hello', mwc.msg.decode('utf-8'))
 
