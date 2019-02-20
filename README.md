@@ -1,6 +1,5 @@
 # q
-Q was the man or department that supplied James Bond and other
-secret agents with cool gadgets:
+Q supplied James Bond and other secret agents with cool gadgets:
 
 [![Q in James Bond - Towpilot BY CC 3.0](q.jpg)](https://en.wikipedia.org/wiki/Q_(James_Bond)#/media/File:Desmond_Llewelyn_01.jpg)
 
