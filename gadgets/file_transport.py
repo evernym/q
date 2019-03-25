@@ -1,5 +1,6 @@
-import os
 import uuid
+import aiofiles
+from asyncio.coroutines import os
 
 import mwc
 import agent_common
@@ -15,18 +16,18 @@ def _next_item_name(folder, filter=None):
                 if (filter is None) or (fname.startswith(filter)):
                     yield fname
 
-def _pop_item(fpath):
-    with open(fpath, 'rb') as f:
-        data = f.read()
+async def _pop_item(fpath):
+    async with aiofiles.open(fpath, 'rb') as f:
+        data = await f.read()
     os.remove(fpath)
     return data
 
-def _item_content(folder, filter=None):
+async def _item_content(folder, filter=None):
     '''Return next as mwc.MessageWithContext, or None if nothing is found.'''
     try:
         data = None
         for fname in _next_item_name(folder, filter):
-            data = _pop_item(os.path.join(folder, fname))
+            data = await _pop_item(os.path.join(folder, fname))
             return mwc.MessageWithContext(data)
 
     except KeyboardInterrupt:
@@ -87,7 +88,7 @@ class FileTransport:
         '''Which folder do I write to?'''
         return self.a_dir if self.folder_is_destward else self.b_dir
 
-    def send(self, payload, id=None, *args):
+    async def send(self, payload, id=None, *args):
         if isinstance(payload, str):
             payload = payload.encode('utf-8')
         if id is None:
@@ -99,14 +100,14 @@ class FileTransport:
         w = self.write_dir
         temp_fname = os.path.join(w, '.' + id + '.tmp')
         perm_fname = os.path.join(w, id + _MSG_EXT)
-        with open(temp_fname, 'wb') as f:
-            f.write(payload)
+        async with aiofiles.open(temp_fname, 'wb') as f:
+            await f.write(payload)
         os.rename(temp_fname, perm_fname)
         return id
 
-    def peek(self, filter=None):
+    async def peek(self, filter=None):
         for x in _next_item_name(self.read_dir, filter):
             return True
 
-    def receive(self, filter=None):
-        return _item_content(self.read_dir, filter)
+    async def receive(self, filter=None):
+        return await _item_content(self.read_dir, filter)

@@ -1,55 +1,56 @@
 import os
-import unittest
+import pytest
 import tempfile
+import aiofiles
 
 import helpers
 from file_transport import FileTransport as FT
 
-class TransportTest(unittest.TestCase):
 
-    def setUp(self):
-        self.tempdir = tempfile.TemporaryDirectory()
+@pytest.fixture()
+def scratch_space():
+    x = tempfile.TemporaryDirectory()
+    yield x
+    x.cleanup()
 
-    def tearDown(self):
-        self.tempdir.cleanup()
+@pytest.mark.asyncio
+async def test_receive_from_empty(scratch_space):
+    x = FT(scratch_space.name)
+    assert not bool(await x.receive())
 
-    def test_receive_from_empty(self):
-        x = FT(self.tempdir.name)
-        self.assertFalse(x.receive())
+@pytest.mark.asyncio
+async def test_receive_from_full(scratch_space):
+    x = FT(scratch_space.name)
+    # Write something to the folder I'm about to read from.
+    fpath = os.path.join(x.read_dir, 'x.msg')
+    async with aiofiles.open(fpath, 'wt') as f:
+        await f.write('hello')
+    # First attempt to read should yield what I just wrote.
+    assert await x.receive()
+    # Next fetch should yield None.
+    assert not await x.receive()
 
-    def test_receive_from_full(self):
-        x = FT(self.tempdir.name)
-        # Write something to the folder I'm about to read from.
-        fpath = os.path.join(x.read_dir, 'x.msg')
-        with open(fpath, 'wt') as f:
-            f.write('hello')
-        # First attempt to read should yield what I just wrote.
-        self.assertTrue(x.receive())
-        # Next fetch should yield None.
-        self.assertFalse(x.receive())
+@pytest.mark.asyncio
+async def test_request_response(scratch_space):
+    requester = FT(scratch_space.name)
+    responder = FT(scratch_space.name, folder_is_destward=False)
+    id = await requester.send('ping')
+    # The requester should not see a response yet.
+    assert not (await requester.peek(id))
+    # If the responder sends a response to an unrelated id,
+    # the requester should still not see a response.
+    await responder.send('unrelated')
+    assert not (await requester.peek(id))
+    await responder.send('pong', id)
+    assert await requester.peek(id)
+    mwc = await requester.receive(id)
+    assert 'pong' == mwc.msg.decode('utf-8')
 
-    def test_request_response(self):
-        requester = FT(self.tempdir.name)
-        responder = FT(self.tempdir.name, folder_is_destward=False)
-        id = requester.send('ping')
-        # The requester should not see a response yet.
-        self.assertFalse(requester.peek(id))
-        # If the responder sends a response to an unrelated id,
-        # the requester should still not see a response.
-        responder.send('unrelated')
-        self.assertFalse(requester.peek(id))
-        responder.send('pong', id)
-        self.assertTrue(requester.peek(id))
-        mwc = requester.receive(id)
-        self.assertEqual('pong', mwc.msg.decode('utf-8'))
-
-    def test_send(self):
-        requester = FT(self.tempdir.name)
-        requester.send('hello')
-        self.assertFalse(requester.receive())
-        responder = FT(self.tempdir.name, folder_is_destward=False)
-        mwc = responder.receive()
-        self.assertEqual('hello', mwc.msg.decode('utf-8'))
-
-if __name__ == '__main__':
-    unittest.main()
+@pytest.mark.asyncio
+async def test_send(scratch_space):
+    requester = FT(scratch_space.name)
+    await requester.send('hello')
+    assert not (await requester.receive())
+    responder = FT(scratch_space.name, folder_is_destward=False)
+    mwc = await responder.receive()
+    assert 'hello' == mwc.msg.decode('utf-8')

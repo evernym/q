@@ -1,20 +1,20 @@
-import unittest
+import pytest
 import helpers
 import mtc
 
 PARTIAL_TRUST = mtc.MessageTrustContext(True, False, True)
 
-class MtcTest(unittest.TestCase):
-    def test_ZERO_TRUST(self):
-        self.assertFalse(mtc.ZERO_TRUST)
-    def test_PARTIAL_TRUST(self):
-        self.assertTrue(PARTIAL_TRUST)
-    def test_str_ZERO_TRUST(self):
-        self.assertEqual('zero trust', str(mtc.ZERO_TRUST))
-    def test_str_ZERO_TRUST(self):
-        self.assertEqual('confidentiality, authenticated_origin', str(PARTIAL_TRUST))
-    def test_as_json(self):
-        self.assertEqual('{"confidentiality": true, "integrity": false, "authenticated_origin": true, "non_repudiation": false}', PARTIAL_TRUST.as_json())
+def test_ZERO_TRUST():
+    assert not bool(mtc.ZERO_TRUST)
 
-if __name__ == '__main__':
-    unittest.main()
+def test_PARTIAL_TRUST():
+    assert PARTIAL_TRUST
+
+def test_str_ZERO_TRUST():
+    assert 'zero trust' == str(mtc.ZERO_TRUST)
+
+def test_str_ZERO_TRUST():
+    assert 'confidentiality, authenticated_origin' == str(PARTIAL_TRUST)
+
+def test_as_json():
+    assert '{"confidentiality": true, "integrity": false, "authenticated_origin": true, "non_repudiation": false}' == PARTIAL_TRUST.as_json()

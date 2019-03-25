@@ -8,6 +8,7 @@ import argparse
 import re
 import os
 import time
+import asyncio
 
 import file_transport
 import http_sender
@@ -16,11 +17,11 @@ import smtp_sender
 
 IMAP_PAT = re.compile('^([A-Za-z0-9][^@:]*):([^@]*)@(.+):([0-9]{1,5})$')
 
-def relay(src, dests):
-    mwc = src.receive()
+async def relay(src, dests):
+    mwc = await src.receive()
     if mwc is not None:
         for dest in dests:
-            dest.send(mwc.msg)
+            await dest.send(mwc.msg)
         return mwc
 
 def load_transport(t, is_dest):
@@ -51,7 +52,7 @@ def load_transport(t, is_dest):
         return file_transport.FileTransport(t, is_dest)
     pass
 
-def main(argv, interrupter=None):
+async def main(argv, interrupter=None):
     try:
         parser = argparse.ArgumentParser(description=
             'Relay agent messages from a source to one or more destinations, possibly changing' + \
@@ -67,16 +68,16 @@ def main(argv, interrupter=None):
         src = load_transport(args.src, False)
         dests = [load_transport(x, True) for x in args.dest]
         while True:
-            msg = relay(src, dests)
+            msg = await relay(src, dests)
             if interrupter is not None:
                 if interrupter(msg):
                     if isinstance(src, http_receiver.HttpReceiver):
                         src.stop_serving()
                     break
             if not msg:
-                time.sleep(1)
+                await asyncio.sleep(1)
     except KeyboardInterrupt:
         print('')
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    asyncio.run(main(sys.argv[1:]))
