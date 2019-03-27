@@ -7,7 +7,7 @@ import sys
 import argparse
 import re
 import os
-import time
+import logging
 import asyncio
 
 import file_transport
@@ -50,7 +50,6 @@ def load_transport(t, is_dest):
         if not os.path.isdir(t):
             raise ValueError('Folder "%s" does not exist.' % t)
         return file_transport.FileTransport(t, is_dest)
-    pass
 
 async def main(argv, interrupter=None):
     try:
@@ -66,18 +65,22 @@ async def main(argv, interrupter=None):
 
         args = parser.parse_args(argv)
         src = load_transport(args.src, False)
-        dests = [load_transport(x, True) for x in args.dest]
-        while True:
-            msg = await relay(src, dests)
-            if interrupter is not None:
-                if interrupter(msg):
-                    if isinstance(src, http_receiver.HttpReceiver):
-                        src.stop_serving()
-                    break
-            if not msg:
-                await asyncio.sleep(1)
+        try:
+            dests = [load_transport(x, True) for x in args.dest]
+            logging.debug('Relaying from %s to %s' % (args.src, args.dest))
+            while True:
+                msg = await relay(src, dests)
+                if interrupter is not None:
+                    if interrupter(msg):
+                        break
+                if not msg:
+                    await asyncio.sleep(1)
+        finally:
+            if isinstance(src, http_receiver.HttpReceiver):
+                await src.stop_serving()
     except KeyboardInterrupt:
         print('')
+
 
 if __name__ == '__main__':
     asyncio.run(main(sys.argv[1:]))

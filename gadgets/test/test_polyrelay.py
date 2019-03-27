@@ -1,13 +1,13 @@
-import os
 import pytest
 import tempfile
-import threading
 import time
 import random
-import http.server
-import socketserver
-import requests
 import asyncio
+import logging
+
+import aiohttp
+from aiohttp import web
+from multidict import MultiDict
 from unittest.mock import MagicMock, patch, call
 
 import helpers
@@ -15,7 +15,7 @@ import polyrelay
 import file_transport
 
 class Interrupter:
-    def __init__(self, count=1, timeout=5):
+    def __init__(self, count=1, timeout=3):
         self.count = count
         self.expires = time.time() + timeout
     def __call__(self, msg):
@@ -26,51 +26,38 @@ class Interrupter:
         if time.time() >= self.expires:
             return True
 
-post_body_lock = threading.Lock()
-post_body_signal = threading.Condition(post_body_lock)
-post_body_ready = False
+post_body_signal = asyncio.Event()
 post_body = None
 
-class TrivialWebHandler(http.server.SimpleHTTPRequestHandler):
-    def do_POST(self):
-        global post_body
-        global post_body_signal
-        clen = int(self.headers.get('Content-Length', 0))
-        with post_body_signal:
-            if clen:
-                post_body = self.rfile.read(clen)
-            else:
-                post_body = ''
-            self.send_response(202)
-            self.send_header('Content-type', 'text/plain')
-            self.end_headers()
-            self.wfile.write("202 OK".encode("utf-8"))
-            post_body_signal.notify_all()
-
-def start_web_server_for_one_request():
-    global post_body_lock
-    global post_body_ready
+async def accept_post(request):
     global post_body
-    with post_body_lock:
-        post_body = None
-        post_body_ready = False
-    port = random.randint(10000, 65000)
-    def run_web_server():
-        with socketserver.TCPServer(("", port), TrivialWebHandler) as httpd:
-            try:
-                httpd.timeout = 3 #seconds
-                httpd.handle_request()
-            finally:
-                httpd.socket.close()
-    thread = threading.Thread(target=run_web_server)
-    thread.start()
-    return (port, thread)
+    global post_body_signal
+    data = await request.content.read()
+    post_body = data
+    resp = web.Response(text="202 OK", headers={"Content-Type": "text/plain"})
+    resp.set_status(202)
+    post_body_signal.set()
+    return resp
 
-@pytest.fixture()
+@pytest.fixture
 def scratch_space():
     x = tempfile.TemporaryDirectory()
     yield x
     x.cleanup()
+
+@pytest.fixture
+async def web_server_port():
+    post_body = None
+    post_body_signal.clear()
+    app = web.Application()
+    app.add_routes([web.post('/', accept_post)])
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = random.randint(10000, 65000)
+    site = web.TCPSite(runner, 'localhost', port)
+    await site.start()
+    yield port
+    await runner.cleanup()
 
 async def run_relay_from_file(scratch_space, dests):
     src = scratch_space.name
@@ -102,6 +89,7 @@ async def relay_to_and_from_files(scratch_space, dest_count):
         for dest in dests:
             fdest = file_transport.FileTransport(dest, folder_is_destward=False)
             x = await fdest.receive()
+            assert x is not None
             assert x.msg == b"hello"
     finally:
         for dd in destdirs:
@@ -124,23 +112,27 @@ async def test_to_email_with_mock(scratch_space):
         # the SMTP object's quit() method.
         p.assert_has_calls([call().quit()])
 
-#@pytest.mark.asyncio
-async def txest_to_http(scratch_space):
-    port, thread = start_web_server_for_one_request()
-    await run_relay_from_file(scratch_space, ["http://localhost:%d" % port])
-    # Wait for up to 2 secs for a post to be processed by our mini web server.
-    with post_body_signal:
-        post_body_signal.wait_for(lambda: post_body_ready, timeout=2)
+@pytest.mark.asyncio
+async def test_to_http(scratch_space, web_server_port):
+    await run_relay_from_file(scratch_space, ["http://localhost:%d" % web_server_port])
     global post_body
     assert post_body == b"hello"
 
-#@pytest.mark.asyncio
-async def txest_from_http(scratch_space):
+@pytest.mark.asyncio
+async def test_from_http(scratch_space):
     dests = [scratch_space.name]
+    # Start an inbound http relay
     port = random.randint(10000,65000)
     src = "http://localhost:%d" % port
     main = asyncio.create_task(polyrelay.main([src, scratch_space.name], Interrupter()))
-    r = requests.post(src, headers={'content-length':'5'}, data="hello")
+    # Give web server a chance to start up. (This isn't strictly
+    # necessary, but it makes the order of logged events a little
+    # easier to understand.)
+    await asyncio.sleep(0.25)
+    # POST to the relay
+    async with aiohttp.ClientSession() as session:
+        async with session.post(src, data="hello") as resp:
+            x = await resp.text()
     # Now wait for the relay to process the message, get interrupted, and exit
     # its main loop.
     await main
@@ -150,5 +142,10 @@ async def txest_from_http(scratch_space):
     # we create a new FileTransport that has folder_is_destward=False. It will
     # *read* from the /a subdir.
     f = file_transport.FileTransport(scratch_space.name, folder_is_destward=False)
-    x = await f.receive("hello")
+    x = await f.receive()
     assert x.msg == b'hello'
+
+if __name__ == '__main__':
+    import pytest
+    asyncio.get_event_loop().set_debug(True)
+    pytest.main()

@@ -37,14 +37,17 @@ class MessageWithContext:
     def __str__(self):
         msg_fragment = None
         if self.msg:
-            m = _id_pat.search(self.msg)
+            msg = self.msg
+            if isinstance(msg, bytes):
+                msg = msg.decode('utf-8')
+            m = _id_pat.search(msg)
             if m:
                 msg_fragment = '{..."@id":"%s"...}' % m.group(1)
             else:
                 if len(self.msg) <= 40:
-                    msg_fragment = _squeeze_pat.sub(' ', self.msg)
+                    msg_fragment = _squeeze_pat.sub(' ', msg)
                 else:
-                    msg_fragment = self.msg[:60].strip().replace('\r','')
+                    msg_fragment = msg[:60].strip().replace('\r','')
                     msg_fragment = _squeeze_pat.sub(' ', msg_fragment)
                     msg_fragment = msg_fragment[:37] + '...'
         else:

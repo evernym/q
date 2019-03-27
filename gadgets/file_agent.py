@@ -2,7 +2,6 @@
 
 # '''An SSI agent that interacts through the file system.'''
 
-import aiologger
 import os
 import sys
 import time
@@ -10,6 +9,7 @@ import json
 import datetime
 import asyncio
 import configargparse
+import logging
 
 import agent_common
 import file_transport
@@ -18,7 +18,7 @@ import handler_common
 
 from indy import crypto, did, wallet
 
-logger = aiologger.Logger.with_default_handlers()
+logger = logging.Logger(__name__)
 
 MY_MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
 DEFAULT_FOLDER = '~/.' + MY_MODULE_NAME

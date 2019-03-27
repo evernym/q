@@ -11,6 +11,7 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 import zipfile
+import asyncio
 
 import agent_common
 import mtc
@@ -193,31 +194,36 @@ class MailTransport:
             queue = MailQueue()
         self.queue = queue
 
-    def send(self, payload, dest, in_reply_to_id=None, in_reply_to_subj=None):
-        m = MIMEMultipart()
-        m['From'] = "indyagent1@gmail.com" #TODO: get from config
-        m['To'] = dest
-        if in_reply_to_subj:
-            subj = in_reply_to_subj
-            if not _subject_redundant_prefix_pat.match(in_reply_to_subj):
-                subj = 'Re: ' + subj
-        else:
-            id = handler_common.get_thread_id_from_txt(payload)
-            subj = 'a2a thread %s' % id
-        m['Subject'] = subj
-        if in_reply_to_id:
-            m['In-Reply-To'] = in_reply_to_id
-        m.attach(MIMEText('See attached file.', 'plain'))
-        p = MIMEBase('application', 'octet-stream')
-        p.set_payload(payload)
-        encoders.encode_base64(p)
-        p.add_header('Content-Disposition', "attachment; filename=msg.ap")
-        m.attach(p)
-        s = smtplib.SMTP('smtp.gmail.com', 587)
-        s.starttls()
-        s.login('indyagent1@gmail.com', 'I 0nly talk via email!')
-        s.sendmail('indyagent1@gmail.com', dest, m.as_string())
-        s.quit()
+    async def send(self, payload, dest, in_reply_to_id=None, in_reply_to_subj=None):
+        def do_send():
+            m = MIMEMultipart()
+            m['From'] = "indyagent1@gmail.com" #TODO: get from config
+            m['To'] = dest
+            if in_reply_to_subj:
+                subj = in_reply_to_subj
+                if not _subject_redundant_prefix_pat.match(in_reply_to_subj):
+                    subj = 'Re: ' + subj
+            else:
+                id = handler_common.get_thread_id_from_txt(payload)
+                subj = 'a2a thread %s' % id
+            m['Subject'] = subj
+            if in_reply_to_id:
+                m['In-Reply-To'] = in_reply_to_id
+            m.attach(MIMEText('See attached file.', 'plain'))
+            p = MIMEBase('application', 'octet-stream')
+            p.set_payload(payload)
+            encoders.encode_base64(p)
+            p.add_header('Content-Disposition', "attachment; filename=msg.ap")
+            m.attach(p)
+            s = smtplib.SMTP('smtp.gmail.com', 587)
+            s.starttls()
+            s.login('indyagent1@gmail.com', 'I 0nly talk via email!')
+            s.sendmail('indyagent1@gmail.com', dest, m.as_string())
+            s.quit()
+
+        loop = asyncio.get_event_loop()
+        future = loop.run_in_executor(None, do_send)
+        await future
 
     def receive(self, their_email = None, initial=False):
         '''
