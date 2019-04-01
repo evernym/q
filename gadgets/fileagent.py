@@ -11,46 +11,28 @@ import asyncio
 import configargparse
 import logging
 
-import agent_common
+import baseagent
 import file_transport
 import handlers
 import handler_common
 
 from indy import crypto, did, wallet
 
-logger = logging.Logger(__name__)
+class Agent(baseagent.Agent):
 
-MY_MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
-DEFAULT_FOLDER = '~/.' + MY_MODULE_NAME
-DEFAULT_CONF_FILE = os.path.join(DEFAULT_FOLDER, 'conf')
-DEFAULT_LOG_LEVEL = 'DEBUG' #good for development; switch to INFO for production
+    def __init__(self):
+        super().__init__()
+        self.queue_dir = None
 
-class Agent:
-
-    def __init__(self, cfg):
-        self.cfg = cfg
-        os.makedirs('queue', exist_ok=True)
-        self.trans = file_transport.FileTransport('queue', folder_is_destward=False)
-        self.wallet_config = '{"id": "%s", "storage_config": {"path": "%s"}}' % (cfg.wallet, cfg.folder)
-        self.wallet_credentials = '{"key": "%s"}' % cfg.p
-
-    @property
-    def wallet_folder(self):
-        return os.path.join(self.cfg.folder, self.cfg.wallet)
-
-    @property
-    def wallet_file(self):
-        return os.path.join(self.wallet_folder, 'sqlite.db')
-
-    async def open_wallet(self):
-        exists = os.path.isfile(self.wallet_file)
-        if exists:
-            if self.cfg.reset:
-                os.path.unlink(self.wallet_file)
-                exists = False
-        if not exists:
-            await wallet.create_wallet(self.wallet_config, self.wallet_credentials)
-        self.wallet_handle = await wallet.open_wallet(self.wallet_config, self.wallet_credentials)
+    def configure(self):
+        parser = configargparse.ArgumentParser(
+            description="Run an agent that communicates via the file system.",
+            default_config_files=[self.conf_file_path])
+        super().configure_reset(parser)
+        args = super().configure(parser)
+        self.queue_dir = os.path.join(self.folder, 'queue')
+        os.makedirs(self.queue_dir, exist_ok=True)
+        self.trans = file_transport.FileTransport(self.queue_dir, folder_is_destward=False)
 
     def handle_msg(self, wc):
         # Record when we received this message.
@@ -75,21 +57,21 @@ class Agent:
                         break
             if not handled:
                 etxt = 'Unhandled message -- unsupported @type %s with %s.' % (typ, wc)
-                await logger.warning(etxt)
+                logging.warning(etxt)
                 agent.trans.send(handler_common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
             else:
-                await logger.debug('Handled message of @type %s.' % typ)
+                logging.debug('Handled message of @type %s.' % typ)
         else:
             etxt = 'Unhandled message -- missing @type with %s.' % wc
-            await logger.warning(etxt)
+            logging.warning(etxt)
             agent.trans.send(handler_common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
         return handled
 
     async def fetch_msg(self):
-        return self.trans.receive()
+        return await self.trans.receive()
 
     async def run(self):
-        await logger.info('Agent started.')
+        logging.info('Agent started.')
         try:
             while True:
                 try:
@@ -120,7 +102,7 @@ class Agent:
                 except:
                     agent_common.log_exception()
         finally:
-            await logger.info('Agent stopped.')
+            await logging.info('Agent stopped.')
 
     async def encryptMsg(self, msg):
         with open('plaintext.txt', 'w') as f:
@@ -155,34 +137,19 @@ def _get_loglevel(args):
     return ll
 
 def _start_logging(ll):
-    logger.basicConfig(
+    logging.basicConfig(
         filename=MY_MODULE_NAME + '.log',
         format='%(asctime)s\t%(funcName)s@%(filename)s#%(lineno)s\t%(levelname)s\t%(message)s',
         level=ll)
 
-def _configure():
-    # This config object allows overrides of config;
-    # cmdline > env variable > config file > hard-coded.
-    parser = configargparse.ArgumentParser(
-        description="Run an agent that communicates via the file system.",
-        default_config_files=[DEFAULT_CONF_FILE])
-    parser.add_argument('-p', metavar='PHRASE', required=True, help="passphrase used to unlock wallet")
-    parser.add_argument('-w', '--wallet', metavar='NAME', default='wallet', help='name of wallet to use')
-    parser.add_argument('-r', '--reset', action='store_true', default=False, help='reset the wallet instead of keeping accumulated state')
-    parser.add_argument('-l', '--loglevel', metavar='LVL', default=DEFAULT_LOG_LEVEL, help="log level (default=%s)" % DEFAULT_LOG_LEVEL)
-    parser.add_argument('-f', '--folder', metavar='FOLDER', default=DEFAULT_FOLDER, help="folder where state is stored (default=%s)" % DEFAULT_FOLDER)
-    args = parser.parse_args()
-    args.folder = os.path.expanduser(args.folder)
-    # Make current working directory the folder where agent persists state.
-    _use_statefolder(args.folder)
-    _start_logging(_get_loglevel(args))
-    return args
-
 async def main():
-    cfg = _configure()
-    agent = Agent(cfg)
+    agent = Agent()
+    args = agent.configure()
     await agent.open_wallet()
     await agent.run()
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print('')

@@ -32,3 +32,7 @@ simple file I/O.
 A pluggable relay that lets you translate any agent transport
 into different transports (either 1-to-1, or teeing 1-to-many),
 for arbitrary testing scenarios.
+
+### dcs (DIDComm Sender)
+
+Command-line utility to send a file as an agent message.
