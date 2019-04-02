@@ -60,7 +60,7 @@ class Agent:
         if not os.path.isdir(self.folder):
             os.makedirs(self.folder, exist_ok=True)
         logging.basicConfig(
-            filename=self.deriving_module_name + '.log',
+            filename=os.path.join(self.folder, self.deriving_module_name + '.log'),
             format='%(asctime)s\t%(funcName)s@%(filename)s#%(lineno)s\t%(levelname)s\t%(message)s',
             level=self.log_level)
         self.wallet_config = '{"id": "%s", "storage_config": {"path": "%s"}}' % (args.wallet, self.folder)
@@ -72,9 +72,10 @@ class Agent:
             raise AssertionError('Must call .configure() before open_wallet()')
         exists = os.path.isfile(self.wallet_file)
         if exists:
-            if self.args.reset:
-                os.path.unlink(self.wallet_file)
-                exists = False
+            if 'reset' in self.args:
+                if self.args.reset:
+                    os.path.unlink(self.wallet_file)
+                    exists = False
         if not exists:
             await wallet.create_wallet(self.wallet_config, self.wallet_credentials)
         self.wallet_handle = await wallet.open_wallet(self.wallet_config, self.wallet_credentials)

@@ -55,3 +55,5 @@ ALL = {
     'ALICE_EXTRA_EDGE': ALICE_EXTRA_EDGE,
     'BOB_EXTRA_EDGE': BOB_EXTRA_EDGE
 }
+
+ALL_NAMES = sorted(ALL.keys())
