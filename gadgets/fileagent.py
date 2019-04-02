@@ -4,7 +4,6 @@
 
 import os
 import sys
-import time
 import json
 import datetime
 import asyncio
@@ -18,11 +17,15 @@ import handler_common
 
 from indy import crypto, did, wallet
 
+
 class Agent(baseagent.Agent):
 
     def __init__(self):
         super().__init__()
+        # Object isn't fully inited; must call .configure() next.
+        # Until then, these next properties don't have meaningful values.
         self.queue_dir = None
+        self.trans = None
 
     def configure(self):
         parser = configargparse.ArgumentParser(
@@ -67,84 +70,28 @@ class Agent(baseagent.Agent):
             self.trans.send(handler_common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
         return handled
 
-    async def fetch_msg(self):
-        return await self.trans.receive()
-
     async def run(self):
         logging.info('Agent started.')
         try:
             while True:
                 try:
-                    wc = await self.fetch_msg()
-                    if wc == "test":
-                        await wallet.close_wallet(self.wallet_handle)
-                        client = "test"
-                        self.wallet_config = '{"id": "%s-wallet"}' % client
-                        self.wallet_credentials = '{"key": "%s-wallet-key"}' % client
-                        self.wallet_handle = await wallet.open_wallet(securemsg.wallet_config, securemsg.wallet_credentials)
-
-                        print('wallet = %s' % self.wallet_handle)
-
-                        meta = await did.list_my_dids_with_meta(self.wallet_handle)
-                        res = json.loads(meta)
-
-                        self.my_did = res[0]["did"]
-                        self.my_vk = res[0]["verkey"]
-
-                    elif wc:
+                    wc = await self.trans.receive()
+                    if wc:
                         self.handle_msg(wc)
                     else:
                         await asyncio.sleep(2.0)
                 except KeyboardInterrupt:
-                    sys.exit(0)
+                    return
                 except json.decoder.JSONDecodeError as e:
-                    agent.trans.send(handler_common.problem_report(wc, str(e)), wc.sender, wc.in_reply_to, wc.subject)
+                    self.trans.send(handler_common.problem_report(wc, str(e)), wc.sender, wc.in_reply_to, wc.subject)
                 except:
                     self.log_exception()
         finally:
             logging.info('Agent stopped.')
 
-    async def encryptMsg(self, msg):
-        with open('plaintext.txt', 'w') as f:
-            f.write(msg)
-        with open('plaintext.txt', 'rb') as f:
-            msg = f.read()
-        encrypted = await crypto.auth_crypt(self.wallet_handle, self.my_vk, self.their_vk, msg)
-        return encrypted
-
-    async def decryptMsg(self, encrypted):
-        decrypted = await crypto.auth_decrypt(self.wallet_handle, self.my_vk, encrypted)
-        return (decrypted)
-
-    def build_json(self):
-        did_vk = {}
-        did_vk["did"] = self.my_did
-        did_vk["my_vk"] = self.my_vk
-        return json.dumps(did_vk)
-
-def _use_statefolder(folder):
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-    os.chdir(folder)
-
-def _get_loglevel(args):
-    ll = ('DIWEC'.index(args.loglevel[0].upper()) + 1) * 10
-    if ll <= 0:
-        try:
-            ll = int(args.loglevel)
-        except:
-            sys.exit('Unrecognized loglevel %s.' % args.loglevel)
-    return ll
-
-def _start_logging(ll):
-    logging.basicConfig(
-        filename=MY_MODULE_NAME + '.log',
-        format='%(asctime)s\t%(funcName)s@%(filename)s#%(lineno)s\t%(levelname)s\t%(message)s',
-        level=ll)
-
 async def main():
     agent = Agent()
-    args = agent.configure()
+    agent.configure()
     await agent.open_wallet()
     await agent.run()
 

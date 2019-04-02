@@ -2,19 +2,22 @@ import re
 
 import mtc
 
+
 def _make_json_key_value_pat(key):
     pat_txt = r'"%s"\s*:\s*"([^"]+)"' % key
     return re.compile(pat_txt, re.S)
+
 
 _id_pat = _make_json_key_value_pat('@id')
 _type_pat = _make_json_key_value_pat('@type')
 _squeeze_pat = re.compile('\\s*\n[\t ]*')
 
+
 class MessageWithContext:
-    '''
+    """
     Hold a message plus its associated trust context, sender, and other metadata.
-    '''
-    def __init__(self, msg:str=None, sender:str=None, tc:mtc.MessageTrustContext=None):
+    """
+    def __init__(self, msg: str = None, sender: str = None, tc:mtc.MessageTrustContext = None):
         # Enforce precondition on datatype of sender
         if sender:
             assert isinstance(sender, str)
@@ -32,8 +35,10 @@ class MessageWithContext:
             tc.authenticated_origin = True
         self.tc = tc
         self.obj = None
+
     def __bool__(self):
         return bool(self.msg)
+
     def __str__(self):
         msg_fragment = None
         if self.msg:
@@ -56,11 +61,13 @@ class MessageWithContext:
         if not sender:
             sender = 'nobody'
         return '%s from %s with %s' % (msg_fragment, sender, str(self.tc))
+
     def get_type(self):
         if self.msg:
             match = _type_pat.search(self.msg)
             if match:
                 return match.group(1)
 
-'''A special global constant representing degenerate, empty MessageWithContext.'''
+
+"""A special global constant representing degenerate, empty MessageWithContext."""
 NULL_MWC = MessageWithContext()
