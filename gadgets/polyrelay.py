@@ -5,13 +5,10 @@ any different transport, for arbitrary testing scenarios.
 
 import sys
 import argparse
-import re
-import os
 import logging
 import asyncio
 
 import transports
-import http_receiver
 
 
 async def relay(src, dests):
@@ -25,19 +22,18 @@ async def relay(src, dests):
 async def main(argv, interrupter=None):
     try:
         parser = argparse.ArgumentParser(description=
-                'Relay agent messages from a source to one or more destinations, possibly changing' + \
-                ' transports in the process. Transports will be detected based on argument formats.')
+                'Relay agent messages from a source to one or more destinations, ' +
+                'possibly changing transports in the process. Transports will be ' +
+                'detected based on argument formats.')
         parser.add_argument('src', metavar='SRC', type=str,
-                            help='A source like http://localhost:8080 or ~/myfolder' + \
-                                 ' or imap://user:pass@imapserver:port.')
+                            help=f'A source like {" | ".join(transports.RECEIVER_EX)}.')
         parser.add_argument('dest', metavar='DEST', type=str, nargs='+',
-                            help='A destination like https://x.com/abc or ~/myfolder or' + \
-                                 'smtp://user:pass@mail.my.org:234?from=sender@x.com&to=recipient@y.com.')
+                            help=f'A destination like {" | ".join(transports.SENDER_EX)}.')
 
         args = parser.parse_args(argv)
-        src = transports.load(args.src, False)
+        src = transports.load(args.src, transports.RECEIVERS)
         try:
-            dests = [transports.load(x, True) for x in args.dest]
+            dests = [transports.load(x, transports.SENDERS) for x in args.dest]
             logging.debug('Relaying from %s to %s' % (args.src, args.dest))
             while True:
                 msg = await relay(src, dests)
@@ -47,8 +43,10 @@ async def main(argv, interrupter=None):
                 if not msg:
                     await asyncio.sleep(1)
         finally:
-            if isinstance(src, http_receiver.HttpReceiver):
-                await src.stop_serving()
+            # If I'm dealing with a receiver that's running a daemon, shut it down.
+            stopper = getattr(src, 'stop', None)
+            if stopper and callable(stopper):
+                await stopper()
     except KeyboardInterrupt:
         print('')
 

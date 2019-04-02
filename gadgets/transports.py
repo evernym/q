@@ -1,37 +1,37 @@
-import re
+import collections
 import os
+import re
+import importlib
 
-import file_transport
-import http_sender
-import http_receiver
-import smtp_sender
-import stdout_sender
+PluginInfo = collections.namedtuple('PluginInfo', ['name', 'cls', 'pat', 'example'])
 
-IMAP_PAT = re.compile('^([A-Za-z0-9][^@:]*):([^@]*)@(.+):([0-9]{1,5})$')
+def _load_plugins(class_name):
+    items = []
+    pat = re.compile(f'(.*_{class_name.lower()})\\.py$')
+    my_folder = os.path.dirname(os.path.abspath(__name__))
+    for item in os.listdir(my_folder):
+        x = None
+        m = pat.match(item)
+        if m:
+            plugin = m.group(1)
+            x = importlib.import_module(plugin)
+            cls = getattr(x, class_name)
+            item = PluginInfo(plugin, cls, x.PAT, x.EXAMPLE)
+            # Move file plugin to the end since it matches anything.
+            if plugin.startswith('file'):
+                items.append(item)
+            else:
+                items.insert(0, item)
+    return items
 
-def load(t, is_dest):
-    http_matched = False
-    if IMAP_PAT.match(t):
-        raise ValueError('IMAP transport not yet supported.')
-    elif smtp_sender.PAT.match(t):
-        if is_dest:
-            return smtp_sender.SmtpSender(t)
-        else:
-            raise ValueError("SMTP transport can only be a dest, not a source. Use IMAP instead.")
-    if http_receiver.PAT.match(t):
-        if not is_dest:
-            return http_receiver.HttpReceiver(t)
-        else:
-            http_matched = True
-    if http_sender.PAT.match(t):
-        if is_dest:
-            return http_sender.HttpSender(t)
-        else:
-            http_matched = True
-    if http_matched:
-        raise ValueError("HTTP arg reverses src and dest syntax.")
-    else:
-        t = os.path.expanduser(t)
-        if not is_dest and not os.path.isdir(t):
-            raise ValueError('Folder "%s" does not exist.' % t)
-        return file_transport.FileTransport(t, is_dest)
+SENDERS = _load_plugins('Sender')
+RECEIVERS = _load_plugins('Receiver')
+
+SENDER_EX = [x.example for x in SENDERS]
+RECEIVER_EX = [x.example for x in RECEIVERS]
+
+def load(uri, items):
+    for item in items:
+        if item.pat.match(uri):
+            return item.cls(uri)
+    raise ValueError(f"Can't find a transport that matches {uri}.")

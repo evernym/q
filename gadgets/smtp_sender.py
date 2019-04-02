@@ -10,7 +10,9 @@ PAT = re.compile('^smtp://([A-Za-z0-9][^@:]*):([^@]*)@([^:/]+)(?::([0-9]{1,5}))?
 FROM_PAT = re.compile('from=((?:[A-Za-z0-9][^=&@]*)@(?:[^.=&]+)[.](?:[^.=&]+[^=&]*))')
 TO_PAT = re.compile('to=((?:[A-Za-z0-9][^=&@]*)@(?:[^.=&]+)[.](?:[^.=&]+[^=&]*))')
 
-class SmtpSender:
+EXAMPLE = 'smtp://user:pass@mail.my.org:234?from=sender@x.com&to=recipient@y.com'
+
+class Sender:
 
     def __init__(self, endpoint):
         m = PAT.match(endpoint)

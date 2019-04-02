@@ -1,6 +1,10 @@
+import re
 import sys
 
-class StdoutSender:
+PAT = re.compile('^stdout$', re.I)
+EXAMPLE = 'stdout'
+
+class Sender:
 
     def __init__(self):
         pass

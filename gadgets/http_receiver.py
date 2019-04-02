@@ -1,4 +1,3 @@
-import asyncio
 from aiohttp import web
 import traceback
 import re
@@ -8,11 +7,12 @@ import logging
 import mwc
 
 PAT = re.compile('^http(s)?://([^:/]+)(?::([0-9]{1,5}))?(?:/(.*))?$')
+EXAMPLE = 'http://localhost:8080'
 
 def _resp(code, msg):
     return web.Response(text='%d %s' % (code, msg), headers={"Content-Type": "text/plain"})
 
-class HttpReceiver:
+class Receiver:
     def __init__(self, uri):
         m = PAT.match(uri)
         if m.group(1) == 's':
@@ -41,7 +41,7 @@ class HttpReceiver:
             ex = traceback.format_exc()
             return _resp(500, ex)
 
-    async def _start_listening(self):
+    async def start(self):
         logging.debug('About to start web server on port %d' % self.port)
         app = web.Application()
         app.add_routes([web.post('/', self.accept)])
@@ -55,21 +55,22 @@ class HttpReceiver:
             ex = traceback.format_exc()
             logging.debug('Failed to start web server. ' + ex)
 
-    async def stop_serving(self):
+    async def stop(self):
         with self.queue_lock:
             if self.web_server:
                 await self.web_server.cleanup()
+                self.web_server = None
 
     async def peek(self):
         with self.queue_lock:
             if not self.web_server:
-                await self._start_listening()
+                await self.start()
             if self.queue:
                 return True
 
     async def receive(self):
         with self.queue_lock:
             if not self.web_server:
-                await self._start_listening()
+                await self.start()
             if self.queue:
                 return self.queue.pop(0)
