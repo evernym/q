@@ -1,6 +1,9 @@
 import inspect
 import logging
 import os
+import sys
+import traceback
+
 
 from indy import wallet
 
@@ -40,18 +43,27 @@ class Agent:
         self.wallet_handle = None
 
     def configure_reset(self, cfg):
-        cfg.add_argument('-r', '--reset', action='store_true', default=False,
-                         help='reset the wallet instead of keeping accumulated state')
+        cfg.add_argument('--reset', action='store_true', default=False,
+                         help='Reset the wallet instead of keeping accumulated state.')
 
     def configure(self, cfg):
-        cfg.add_argument('-p', metavar='PHRASE', required=True, help="Passphrase used to unlock wallet")
-        cfg.add_argument('--wallet', metavar='NAME', default='wallet', help='Name of wallet to use')
+        group = cfg.add_mutually_exclusive_group(required=True)
+        group.add_argument('--phrase', metavar='PHRASE', help=
+                "Passphrase to unlock wallet. This is convenient for testing, but is " +
+                "insecure because the password is echoed to the screen.")
+        group.add_argument('--promptphrase', action='store_true', help=
+                "Prompt for passphrase to unlock wallet.")
+        cfg.add_argument('--wallet', metavar='NAME', default='wallet', help=
+                'Name of wallet to use.')
         cfg.add_argument('--loglevel', metavar='LVL', default=self.log_level,
-                         help="Log level (default=%s)" % self.log_level)
+                         help=f"Log level (default={self.log_level}).")
         cfg.add_argument('--folder', metavar='FOLDER', default=self.folder,
-                         help="Folder where state is stored (default=%s)" % self.folder)
+                         help=f"Folder where state is stored (default={self.folder}).")
         self.cfg = cfg
         args = cfg.parse_args()
+        if args.promptphrase:
+            import getpass
+            args.phrase = getpass.getpass('Passphrase to unlock wallet: ')
         self.args = args
         self.wallet = args.wallet
         self.folder = os.path.expanduser(args.folder)
@@ -64,7 +76,7 @@ class Agent:
             format='%(asctime)s\t%(funcName)s@%(filename)s#%(lineno)s\t%(levelname)s\t%(message)s',
             level=self.log_level)
         self.wallet_config = '{"id": "%s", "storage_config": {"path": "%s"}}' % (args.wallet, self.folder)
-        self.wallet_credentials = '{"key": "%s"}' % args.p
+        self.wallet_credentials = '{"key": "%s"}' % args.phrase
         return args
 
     async def open_wallet(self):
@@ -88,3 +100,13 @@ class Agent:
     def wallet_file(self):
         return os.path.join(self.wallet_folder, 'sqlite.db')
 
+    def log_exception(ctx: str = ''):
+        typ, text, trace = sys.exc_info()
+        frame = traceback.extract_tb(trace, 1)[0]
+        text = str(text)
+        if text[-1].isalpha():
+            text += '.'
+        if ctx:
+            ctx += ', '
+        logging.error("%s%s at %s#%s: %s Code was: %s" % (
+            ctx, typ.__name__, frame.filename, frame.lineno, text, frame.line.strip()))

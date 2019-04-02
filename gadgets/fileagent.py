@@ -58,13 +58,13 @@ class Agent(baseagent.Agent):
             if not handled:
                 etxt = 'Unhandled message -- unsupported @type %s with %s.' % (typ, wc)
                 logging.warning(etxt)
-                agent.trans.send(handler_common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
+                self.trans.send(handler_common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
             else:
                 logging.debug('Handled message of @type %s.' % typ)
         else:
             etxt = 'Unhandled message -- missing @type with %s.' % wc
             logging.warning(etxt)
-            agent.trans.send(handler_common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
+            self.trans.send(handler_common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
         return handled
 
     async def fetch_msg(self):
@@ -100,9 +100,9 @@ class Agent(baseagent.Agent):
                 except json.decoder.JSONDecodeError as e:
                     agent.trans.send(handler_common.problem_report(wc, str(e)), wc.sender, wc.in_reply_to, wc.subject)
                 except:
-                    agent_common.log_exception()
+                    self.log_exception()
         finally:
-            await logging.info('Agent stopped.')
+            logging.info('Agent stopped.')
 
     async def encryptMsg(self, msg):
         with open('plaintext.txt', 'w') as f:
