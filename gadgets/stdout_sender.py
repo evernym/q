@@ -6,7 +6,7 @@ EXAMPLE = 'stdout'
 
 class Sender:
 
-    def __init__(self):
+    def __init__(self, ignored):
         pass
 
     async def send(self, payload):

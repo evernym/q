@@ -3,11 +3,9 @@ import tempfile
 import time
 import random
 import asyncio
-import logging
 
 import aiohttp
 from aiohttp import web
-from multidict import MultiDict
 from unittest.mock import MagicMock, patch, call
 
 import helpers
