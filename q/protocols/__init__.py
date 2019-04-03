@@ -22,7 +22,6 @@ def _register(module):
 def _load_plugins():
     import importlib
     import os
-    items = []
     my_folder = os.path.dirname(os.path.abspath(__file__))
     for item in os.listdir(my_folder):
         if item == 'tests' or item.startswith('_') or '.' in item or not os.path.isdir(os.path.join(my_folder, item)):

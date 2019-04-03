@@ -146,14 +146,14 @@ class Receiver:
                         this_txt = part.get_payload()
                         match = _JSON_CONTENT_PAT.match(this_txt)
                         if match:
-                            wc.msg = match.group(1)
+                            wc.raw = match.group(1)
 
             if best_part:
-                wc.msg = best_part.get_payload(decode=True)
+                wc.raw = best_part.get_payload(decode=True)
                 if best_part_ext_idx < 2:
                     # TODO: decrypt and then, if authcrypted, add authenticated_origin in
                     wc.tc = mtc.MessageTrustContext(confidentiality=True, integrity=True)
-            elif wc.msg:
+            elif wc.raw:
                 wc.tc = mtc.MessageTrustContext()
             else:
                 fname = _save_bad_msg(msg)
@@ -161,11 +161,6 @@ class Receiver:
                     _BAD_MSGS_FOLDER, fname,
                     msg.get('from', 'unknown sender'), msg.get('date', 'at unknown time'), msg.get('subject', 'empty')
                 ))
-
-            wc.subject = msg.get('subject')
-            wc.in_reply_to = msg.get('message-id')
-            if not wc.sender:
-                wc.sender = msg.get('from')
             return wc
         except:
             log_helpers.log_exception()

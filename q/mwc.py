@@ -8,63 +8,67 @@ def _make_json_key_value_pat(key):
     return re.compile(pat_txt, re.S)
 
 
-_id_pat = _make_json_key_value_pat('@id')
-_type_pat = _make_json_key_value_pat('@type')
-_squeeze_pat = re.compile('\\s*\n[\t ]*')
+_ID_PAT = _make_json_key_value_pat('@id')
+_TYPE_PAT = _make_json_key_value_pat('@type')
+_SQUEEZE_PAT = re.compile('\\s*\n[\t ]*')
 
 
 class MessageWithContext:
     """
     Hold a message plus its associated trust context, sender, and other metadata.
     """
-    def __init__(self, msg: str = None, sender: str = None, tc:mtc.MessageTrustContext = None):
-        # Enforce precondition on datatype of sender
-        if sender:
-            assert isinstance(sender, str)
-        self.msg = msg
-        self.sender = sender
-        self.in_reply_to = None
-        self.subject = None
+    def __init__(self, raw: str = None, tc: mtc.MessageTrustContext = None):
+        if isinstance(raw, bytes):
+            raw = raw.decode('utf-8')
+        self.raw = raw
+        self.unpacked = None
+        self.obj = None
         if tc is None:
             tc = mtc.MessageTrustContext()
-        # If we have a DID or key as the sender, then we know who sent it with confidence.
-        # TODO: we need to split sender and reply email address apart. They're different
-        # concepts. What we're calling sender here is authenticated_origin. All messages
-        # should have a reply address.
-        if sender and ('@' not in sender):
-            tc.authenticated_origin = True
         self.tc = tc
-        self.obj = None
+
+    @property
+    def sender(self):
+        if self.unpacked:
+            return self.unpacked.get('sender_verkey', None)
 
     def __bool__(self):
-        return bool(self.msg)
+        return bool(self.raw)
 
     def __str__(self):
         msg_fragment = None
-        if self.msg:
-            msg = self.msg
-            if isinstance(msg, bytes):
-                msg = msg.decode('utf-8')
-            m = _id_pat.search(msg)
+        if self.raw:
+            raw = self.raw[:300]
+            good_descriptors = []
+            m = _TYPE_PAT.search(raw)
             if m:
-                msg_fragment = '{..."@id":"%s"...}' % m.group(1)
+                m = m.group(1)
+                i = m.find(';')
+                if i:
+                    m = '...' + m[i + 1:]
+                good_descriptors.append('"@type":"%s"' % m)
+            m = _ID_PAT.search(raw)
+            if m:
+                good_descriptors.append('"@id":"%s"' % m.group(1))
+            if good_descriptors:
+                msg_fragment = '{...%s...}' % ','.join(good_descriptors)
             else:
-                if len(self.msg) <= 40:
-                    msg_fragment = _squeeze_pat.sub(' ', msg)
+                if len(self.raw) <= 40:
+                    msg_fragment = _SQUEEZE_PAT.sub(' ', raw)
                 else:
-                    msg_fragment = msg[:60].strip().replace('\r','')
-                    msg_fragment = _squeeze_pat.sub(' ', msg_fragment)
+                    msg_fragment = raw[:60].strip().replace('\r','')
+                    msg_fragment = _SQUEEZE_PAT.sub(' ', msg_fragment)
                     msg_fragment = msg_fragment[:37] + '...'
         else:
             msg_fragment = '(empty)'
-        sender = self.sender
-        if not sender:
-            sender = 'nobody'
+        sender = self.sender if self.sender else 'nobody'
+        if len(sender) > 8:
+            sender = sender[:8] + '...'
         return '%s from %s with %s' % (msg_fragment, sender, str(self.tc))
 
     def get_type(self):
-        if self.msg:
-            match = _type_pat.search(self.msg)
+        if self.raw:
+            match = _TYPE_PAT.search(self.raw)
             if match:
                 return match.group(1)
 

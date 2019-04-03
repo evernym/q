@@ -45,8 +45,8 @@ async def test_request_response(scratch_space):
     assert not (await requester.peek(id))
     await responder.send('pong', id)
     assert await requester.peek(id)
-    mwc = await requester.receive(id)
-    assert 'pong' == mwc.msg.decode('utf-8')
+    wc = await requester.receive(id)
+    assert 'pong' == wc.raw
 
 
 @pytest.mark.asyncio
@@ -55,8 +55,8 @@ async def test_send(scratch_space):
     await requester.send('hello')
     assert not (await requester.receive())
     responder = FT(scratch_space.name, folder_is_destward=False)
-    mwc = await responder.receive()
-    assert 'hello' == mwc.msg.decode('utf-8')
+    wc = await responder.receive()
+    assert 'hello' == wc.raw
 
 
 if __name__ == '__main__':

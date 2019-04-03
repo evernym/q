@@ -16,8 +16,19 @@ def test_empty_msg_nonempty_trust():
 
 
 def test_str_with_id():
-    wc = mwc.MessageWithContext('{"x" :\t25 \r\n\t""@id":\r\n"abc")', 'Fred', PARTIAL_TRUST)
+    wc = mwc.MessageWithContext(b'{"x" :\t25 \r\n\t"@id":\r\n"abc")', PARTIAL_TRUST)
+    wc.unpacked = {'sender_verkey': 'Fred'}
     assert '{..."@id":"abc"...} from Fred with confidentiality, authenticated_origin' == str(wc)
+
+
+def test_str_with_type():
+    wc = mwc.MessageWithContext(b'{"x" :\t25 \r\n\t"@type":\r\n"abcwxyz;x/1.0/foo")')
+    assert '{..."@type":"...x/1.0/foo"...} from nobody with zero trust' == str(wc)
+
+
+def test_str_with_type_and_id():
+    wc = mwc.MessageWithContext(b'{"x":25,"@id":"abc", "@type":\r\n"abcwxyz;x/1.0/foo")', PARTIAL_TRUST)
+    assert '{..."@type":"...x/1.0/foo","@id":"abc"...} from nobody with confidentiality, authenticated_origin' == str(wc)
 
 
 def test_str_with_no_id():
@@ -26,7 +37,7 @@ def test_str_with_no_id():
 
 
 def test_long_str_with_no_id():
-    wc = mwc.MessageWithContext('{"attr_name":\n"abcdeklmnopq",\t\r\n  "x": 3.14159   }', mtc.ZERO_TRUST)
+    wc = mwc.MessageWithContext(b'{"attr_name":\n"abcdeklmnopq",\t\r\n  "x": 3.14159   }', mtc.ZERO_TRUST)
     assert '{"attr_name": "abcdeklmnopq", "x": 3.... from nobody with zero trust' == str(wc)
 
 

@@ -43,7 +43,7 @@ def test_queue_pop_empty(testqueue):
     
     
 def test_queue_push1(testqueue):
-    testqueue.push('hi'.encode('utf-8'))
+    testqueue.push(b'hi')
     assert bool(testqueue.pop())
     assert not bool(testqueue.pop())
 
@@ -76,36 +76,35 @@ def _get_mwc_from_sample_email(which):
     return receiver.bytes_to_mwc(raw)
 
 
-def test_bytes_to_mwc_ap_body():
+def test_bytes_to_mwc_dp_body():
     wc = _get_mwc_from_sample_email('dp_body')
-    assert bool(wc.msg)
-    assert 'fred@flintstones.org' == wc.sender
+    assert bool(wc.raw)
     assert not bool(wc.tc)
 
 
 def test_bytes_to_mwc_jwt_attached(urec):
     raw = _get_sample_email_tweaked('dw_attached', 'tiny.dw', 'tiny.jwt')
     wc = urec.bytes_to_mwc(raw)
-    assert bool(wc.msg)
+    assert bool(wc.raw)
     assert 'confidentiality, integrity' in str(wc.tc)
 
 
 def test_bytes_to_mwc_dw_attached():
     wc = _get_mwc_from_sample_email('dw_attached')
-    assert bool(wc.msg)
+    assert bool(wc.raw)
     assert 'confidentiality, integrity' in str(wc.tc)
 
 
 def test_bytes_to_mwc_dp_attached():
     wc = _get_mwc_from_sample_email('dp_attached')
-    assert bool(wc.msg)
+    assert bool(wc.raw)
     assert not bool(wc.tc)
 
 
 def test_bytes_to_mwc_json_attached(urec):
     raw = _get_sample_email_tweaked('dp_attached', 'sample.dp', 'sample.json')
     wc = urec.bytes_to_mwc(raw)
-    assert bool(wc.msg)
+    assert bool(wc.raw)
     assert not bool(wc.tc)
 
 @pytest.fixture
@@ -144,4 +143,4 @@ async def test_receive_over_mocked_imap(inmemrec):
 
 if __name__ == '__main__':
     asyncio.get_event_loop().set_debug(True)
-    pytest.main(['-k', 'mocked_imap'])
+    pytest.main(['-k', 'test_bytes_to_mwc_dp_body'])

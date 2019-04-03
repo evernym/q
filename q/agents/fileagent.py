@@ -2,9 +2,8 @@
 
 if __name__ == '__main__':
     import sys
-    print(f"You can't run a script from inside a python package.\n" +
-        "See https://www.python.org/dev/peps/pep-0366/\n" +
-        "Run bin/<this script name> instead.")
+    print("You can't run a script from inside a python package without -m switch.\n" +
+        "See https://www.python.org/dev/peps/pep-0366/. Run bin/<this script name> instead.")
     sys.exit(1)
 
 import os
@@ -42,37 +41,27 @@ class Agent(base.Agent):
         os.makedirs(self.queue_dir, exist_ok=True)
         self.trans = file_transport.FileTransport(self.queue_dir, folder_is_destward=False)
 
-    def handle_msg(self, wc):
+    async def handle_msg(self, wc):
         # Record when we received this message.
         wc.in_time = datetime.datetime.utcnow()
         handled = False
-        # decrypt wc.msg
-        loop = asyncio.get_event_loop()
-        wc.msg = loop.run_until_complete(self.securemsg.decryptMsg(wc.msg))
-        wc.obj = json.loads(wc.msg[1].decode("utf-8"))
-        # wc.obj = json.loads(wc.msg)
+        await self.unpack(wc)
         typ = wc.obj.get('@type')
         if typ:
-            candidates = handlers.HANDLERS_BY_MSG_TYPE.get(typ)
+            candidates = protocols.HANDLERS_BY_MSG_TYPE.get(typ)
             if candidates:
                 for handler in candidates:
-                    if handler.handle(wc, self):
-                        resp = handler.handle(wc, self)
-                        msg_to_encrypt = common.finish_msg(resp)
-                        encrypted = loop.run_until_complete(self.securemsg.encryptMsg(msg_to_encrypt))
-                        self.trans.send(encrypted, wc.sender, wc.in_reply_to, wc.subject)
+                    if await handler.handle(wc, self):
                         handled = True
                         break
             if not handled:
                 etxt = 'Unhandled message -- unsupported @type %s with %s.' % (typ, wc)
                 logging.warning(etxt)
-                self.trans.send(common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
             else:
                 logging.debug('Handled message of @type %s.' % typ)
         else:
             etxt = 'Unhandled message -- missing @type with %s.' % wc
             logging.warning(etxt)
-            self.trans.send(common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
         return handled
 
     async def run(self):
@@ -82,13 +71,13 @@ class Agent(base.Agent):
                 try:
                     wc = await self.trans.receive()
                     if wc:
-                        self.handle_msg(wc)
+                        await self.handle_msg(wc)
                     else:
                         await asyncio.sleep(2.0)
                 except KeyboardInterrupt:
                     return
                 except json.decoder.JSONDecodeError as e:
-                    self.trans.send(common.problem_report(wc, str(e)), wc.sender, wc.in_reply_to, wc.subject)
+                    logging.warning(str(e))
                 except:
                     log_helpers.log_exception()
         finally:
@@ -99,9 +88,3 @@ async def main():
     agent.configure()
     await agent.open_wallet()
     await agent.run()
-
-
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print('')

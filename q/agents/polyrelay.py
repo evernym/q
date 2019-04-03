@@ -4,9 +4,8 @@ any different transport, for arbitrary testing scenarios.
 """
 if __name__ == '__main__':
     import sys
-    print(f"You can't run a script from inside a python package.\n" +
-        "See https://www.python.org/dev/peps/pep-0366/\n" +
-        "Run bin/<this script name> instead.")
+    print("You can't run a script from inside a python package without -m switch.\n" +
+        "See https://www.python.org/dev/peps/pep-0366/. Run bin/<this script name> instead.")
     sys.exit(1)
 
 
@@ -21,7 +20,7 @@ async def relay(src, dests):
     mwc = await src.receive()
     if mwc is not None:
         for dest in dests:
-            await dest.send(mwc.msg)
+            await dest.send(mwc.raw)
         return mwc
 
 

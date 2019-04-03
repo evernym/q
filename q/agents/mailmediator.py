@@ -35,7 +35,7 @@ class Agent(base.Agent):
         # decrypt wc.msg
         loop = asyncio.get_event_loop()
         wc.msg = loop.run_until_complete(self.securemsg.decryptMsg(wc.msg))
-        wc.obj = json.loads(wc.msg[1].decode("utf-8"))
+        wc.obj = json.loads(wc.raw.decode("utf-8"))
         # wc.obj = json.loads(wc.msg)
         typ = wc.obj.get('@type')
         if typ:

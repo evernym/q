@@ -17,6 +17,7 @@ class MessageTrustContext:
         self.integrity = integrity
         self.authenticated_origin = authenticated_origin
         self.non_repudiation = non_repudiation
+        self.input_validations = []
 
     def __bool__(self):
         for item in self.__dict__.values():
@@ -47,32 +48,3 @@ ZERO_TRUST = MessageTrustContext()
 
 _id_pat = re.compile(r'"@id"\s*:\s*"([^"]+)"', re.S)
 _squeeze_pat = re.compile('\\s*\n[\t ]*')
-
-
-class MessageWithContext:
-    """
-    Hold a message plus its associated trust context.
-    """
-    def __init__(self, msg:str=None, tc:MessageTrustContext=ZERO_TRUST):
-        self.msg = msg
-        self.tc = tc
-
-    def __bool__(self):
-        return bool(self.msg)
-
-    def __str__(self):
-        msg_fragment = None
-        if self.msg:
-            m = _id_pat.search(self.msg)
-            if m:
-                msg_fragment = '{..."@id":"%s"...}' % m.group(1)
-            else:
-                if len(self.msg) <= 40:
-                    msg_fragment = _squeeze_pat.sub(' ', self.msg)
-                else:
-                    msg_fragment = self.msg[:60].strip().replace('\r','')
-                    msg_fragment = _squeeze_pat.sub(' ', msg_fragment)
-                    msg_fragment = msg_fragment[:37] + '...'
-        else:
-            msg_fragment = '(empty)'
-        return '%s with %s' % (msg_fragment, str(self.tc))

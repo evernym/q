@@ -20,7 +20,8 @@ def test_str_ZERO_TRUST():
 
 
 def test_as_json():
-    assert '{"confidentiality": true, "integrity": false, "authenticated_origin": true, "non_repudiation": false}' == PARTIAL_TRUST.as_json()
+    assert '{"confidentiality": true, "integrity": false, "authenticated_origin": true, ' + \
+        '"non_repudiation": false, "input_validations": []}' == PARTIAL_TRUST.as_json()
 
 
 if __name__ == '__main__':
