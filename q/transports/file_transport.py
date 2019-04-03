@@ -7,6 +7,7 @@ from .. import log_helpers
 
 _MSG_EXT = '.msg'
 
+
 def _next_item_name(folder, filter=None):
     for root, folders, files in os.walk(folder):
         folders.clear()
@@ -16,14 +17,16 @@ def _next_item_name(folder, filter=None):
                 if (filter is None) or (fname.startswith(filter)):
                     yield fname
 
+
 async def _pop_item(fpath):
     async with aiofiles.open(fpath, 'rb') as f:
         data = await f.read()
     os.remove(fpath)
     return data
 
+
 async def _item_content(folder, filter=None):
-    '''Return next as mwc.MessageWithContext, or None if nothing is found.'''
+    """Return next as mwc.MessageWithContext, or None if nothing is found."""
     try:
         data = None
         for fname in _next_item_name(folder, filter):
@@ -35,12 +38,12 @@ async def _item_content(folder, filter=None):
         log_helpers.log_exception()
 
 class FileTransport:
-    '''
+    """
     Provide a transport that works by manipulating files in the file system.
-    '''
+    """
 
-    def __init__(self, folder:str, folder_is_destward:bool=True):
-        '''
+    def __init__(self, folder: str, folder_is_destward: bool = True):
+        """
         Claim a folder in the file system as the locus of message
         sending and receiving.
 
@@ -67,7 +70,7 @@ class FileTransport:
           http -> relay -> FileTransport -> agent
                                               |
                FileTransport is srcward of the agent (read from /a)
-        '''
+        """
         folder = os.path.normpath(os.path.abspath(folder))
         if not os.path.isdir(folder):
             raise ValueError('Folder "%s" does not exist.' % folder)
@@ -79,12 +82,12 @@ class FileTransport:
 
     @property
     def read_dir(self):
-        '''Which folder do I read from?'''
+        """Which folder do I read from?"""
         return self.b_dir if self.folder_is_destward else self.a_dir
 
     @property
     def write_dir(self):
-        '''Which folder do I write to?'''
+        """Which folder do I write to?"""
         return self.a_dir if self.folder_is_destward else self.b_dir
 
     async def send(self, payload, id=None, *args):
