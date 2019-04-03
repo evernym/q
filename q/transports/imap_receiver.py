@@ -6,9 +6,9 @@ import logging
 import os
 import re
 
-from . import log_helpers
-from . import mtc
-from . import mwc
+from .. import log_helpers
+from .. import mtc
+from .. import mwc
 
 PAT = re.compile('^imap://([A-Za-z0-9][^@:]*):([^@]*)@(.+):([0-9]{1,5})$')
 EXAMPLE = 'imap://user:pass@imapserver:993'

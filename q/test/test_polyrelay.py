@@ -9,8 +9,8 @@ from aiohttp import web
 from unittest.mock import patch, call
 
 from .. import polyrelay
-from .. import file_transport
-from .. import smtp_sender
+from ..transports import file_transport
+from ..transports import smtp_sender
 
 
 class Interrupter:

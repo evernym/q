@@ -3,7 +3,7 @@ import pytest
 import tempfile
 import aiofiles
 
-from ..file_transport import FileTransport as FT
+from ..transports.file_transport import FileTransport as FT
 
 
 @pytest.fixture()

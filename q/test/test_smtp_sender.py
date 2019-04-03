@@ -2,7 +2,7 @@ import asyncio
 import pytest
 from unittest.mock import patch, call
 
-from .. import smtp_sender
+from ..transports import smtp_sender
 
 
 @pytest.mark.asyncio
