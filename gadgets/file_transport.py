@@ -4,7 +4,7 @@ from asyncio.coroutines import os
 import logging
 
 import mwc
-import agent_common
+import log_helpers
 
 _MSG_EXT = '.msg'
 
@@ -30,11 +30,10 @@ async def _item_content(folder, filter=None):
         for fname in _next_item_name(folder, filter):
             data = await _pop_item(os.path.join(folder, fname))
             return mwc.MessageWithContext(data)
-
     except KeyboardInterrupt:
         raise
     except:
-        agent_common.log_exception()
+        log_helpers.log_exception()
 
 class FileTransport:
     '''

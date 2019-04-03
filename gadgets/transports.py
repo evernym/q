@@ -8,7 +8,7 @@ PluginInfo = collections.namedtuple('PluginInfo', ['name', 'cls', 'pat', 'exampl
 def _load_plugins(class_name):
     items = []
     pat = re.compile(f'(.*_{class_name.lower()})\\.py$')
-    my_folder = os.path.dirname(os.path.abspath(__name__))
+    my_folder = os.path.dirname(os.path.abspath(__file__))
     for item in os.listdir(my_folder):
         x = None
         m = pat.match(item)

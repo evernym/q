@@ -10,6 +10,7 @@ import asyncio
 import configargparse
 import logging
 
+import log_helpers
 import baseagent
 import file_transport
 import handlers
@@ -85,7 +86,7 @@ class Agent(baseagent.Agent):
                 except json.decoder.JSONDecodeError as e:
                     self.trans.send(handler_common.problem_report(wc, str(e)), wc.sender, wc.in_reply_to, wc.subject)
                 except:
-                    self.log_exception()
+                    log_helpers.log_exception()
         finally:
             logging.info('Agent stopped.')
 

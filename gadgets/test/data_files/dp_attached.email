@@ -86,8 +86,8 @@ Content-Type: text/html; charset="UTF-8"
 
 --000000000000aa9fa7057c8f5d27--
 --000000000000aa9fa9057c8f5d29
-Content-Type: application/octet-stream; name="sample.ap"
-Content-Disposition: attachment; filename="sample.ap"
+Content-Type: application/octet-stream; name="sample.dp"
+Content-Disposition: attachment; filename="sample.dp"
 Content-Transfer-Encoding: base64
 Content-ID: <f_jpge8uer0>
 X-Attachment-Id: f_jpge8uer0

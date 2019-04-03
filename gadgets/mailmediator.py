@@ -10,7 +10,7 @@ import json
 import datetime
 import asyncio
 
-import agent_common
+import log_helpers
 import mail_transport
 import handlers
 import handler_common
@@ -93,7 +93,7 @@ class Agent():
                 except json.decoder.JSONDecodeError as e:
                     agent.trans.send(handler_common.problem_report(wc, str(e)), wc.sender, wc.in_reply_to, wc.subject)
                 except:
-                    agent_common.log_exception()
+                    log_helpers.log_exception()
         finally:
             logging.info('Agent stopped.')
 

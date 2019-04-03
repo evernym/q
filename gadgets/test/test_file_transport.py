@@ -13,10 +13,12 @@ def scratch_space():
     yield x
     x.cleanup()
 
+
 @pytest.mark.asyncio
 async def test_receive_from_empty(scratch_space):
     x = FT(scratch_space.name)
     assert not bool(await x.receive())
+
 
 @pytest.mark.asyncio
 async def test_receive_from_full(scratch_space):
@@ -29,6 +31,7 @@ async def test_receive_from_full(scratch_space):
     assert await x.receive()
     # Next fetch should yield None.
     assert not await x.receive()
+
 
 @pytest.mark.asyncio
 async def test_request_response(scratch_space):
@@ -46,6 +49,7 @@ async def test_request_response(scratch_space):
     mwc = await requester.receive(id)
     assert 'pong' == mwc.msg.decode('utf-8')
 
+
 @pytest.mark.asyncio
 async def test_send(scratch_space):
     requester = FT(scratch_space.name)
@@ -54,3 +58,9 @@ async def test_send(scratch_space):
     responder = FT(scratch_space.name, folder_is_destward=False)
     mwc = await responder.receive()
     assert 'hello' == mwc.msg.decode('utf-8')
+
+
+if __name__ == '__main__':
+    import asyncio
+    asyncio.get_event_loop().set_debug(True)
+    pytest.main([__file__])

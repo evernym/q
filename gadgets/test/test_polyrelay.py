@@ -6,11 +6,12 @@ import asyncio
 
 import aiohttp
 from aiohttp import web
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import patch, call
 
 import helpers
 import polyrelay
 import file_transport
+
 
 class Interrupter:
     def __init__(self, count=1, timeout=3):
@@ -24,8 +25,10 @@ class Interrupter:
         if time.time() >= self.expires:
             return True
 
+
 post_body_signal = asyncio.Event()
 post_body = None
+
 
 async def accept_post(request):
     global post_body
@@ -37,11 +40,13 @@ async def accept_post(request):
     post_body_signal.set()
     return resp
 
+
 @pytest.fixture
 def scratch_space():
     x = tempfile.TemporaryDirectory()
     yield x
     x.cleanup()
+
 
 @pytest.fixture
 async def web_server_port():
@@ -57,6 +62,7 @@ async def web_server_port():
     yield port
     await runner.cleanup()
 
+
 async def run_relay_from_file(scratch_space, dests):
     src = scratch_space.name
     main = asyncio.create_task(polyrelay.main([src] + dests, Interrupter()))
@@ -69,6 +75,7 @@ async def run_relay_from_file(scratch_space, dests):
     # Now wait for the relay to process the message, get interrupted, and exit
     # its main loop.
     await main
+
 
 async def relay_to_and_from_files(scratch_space, dest_count):
     destdirs = []
@@ -93,13 +100,16 @@ async def relay_to_and_from_files(scratch_space, dest_count):
         for dd in destdirs:
             dd.cleanup()
 
+
 @pytest.mark.asyncio
 async def test_to_and_from_file(scratch_space):
     await relay_to_and_from_files(scratch_space, 1)
 
+
 @pytest.mark.asyncio
 async def test_tee(scratch_space):
     await relay_to_and_from_files(scratch_space, 3)
+
 
 @pytest.mark.asyncio
 async def test_to_email_with_mock(scratch_space):
@@ -110,11 +120,13 @@ async def test_to_email_with_mock(scratch_space):
         # the SMTP object's quit() method.
         p.assert_has_calls([call().quit()])
 
+
 @pytest.mark.asyncio
 async def test_to_http(scratch_space, web_server_port):
     await run_relay_from_file(scratch_space, ["http://localhost:%d" % web_server_port])
     global post_body
     assert post_body == b"hello"
+
 
 @pytest.mark.asyncio
 async def test_from_http(scratch_space):
@@ -143,7 +155,7 @@ async def test_from_http(scratch_space):
     x = await f.receive()
     assert x.msg == b'hello'
 
+
 if __name__ == '__main__':
-    import pytest
     asyncio.get_event_loop().set_debug(True)
-    pytest.main()
+    pytest.main([__file__])

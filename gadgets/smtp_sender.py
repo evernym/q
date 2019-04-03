@@ -40,19 +40,20 @@ class Sender:
             m = MIMEMultipart()
             m['From'] = 'smtp_sender'
             m['To'] = self.to
-            subj = 'DID Comm message'
+            subj = 'DIDComm message'
             m['Subject'] = subj
             m.attach(MIMEText('See attached file.', 'plain'))
             p = MIMEBase('application', 'octet-stream')
             p.set_payload(payload)
             encoders.encode_base64(p)
-            p.add_header('Content-Disposition', "attachment; filename=msg.ap")
+            p.add_header('Content-Disposition', "attachment; filename=msg.dp")
             m.attach(p)
             s = smtplib.SMTP(self.server, self.port)
             s.starttls()
             s.login(self.user, self.password)
             s.sendmail(self.sender, self.to, m.as_string())
             s.quit()
+
         loop = asyncio.get_event_loop()
         future = loop.run_in_executor(None, do_send)
-        await future
+        return await future
