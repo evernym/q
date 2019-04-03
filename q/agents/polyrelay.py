@@ -2,8 +2,14 @@
 A pluggable relay that lets you translate any agent transport into
 any different transport, for arbitrary testing scenarios.
 """
+if __name__ == '__main__':
+    import sys
+    print(f"You can't run a script from inside a python package.\n" +
+        "See https://www.python.org/dev/peps/pep-0366/\n" +
+        "Run bin/<this script name> instead.")
+    sys.exit(1)
 
-import sys
+
 import argparse
 import logging
 import asyncio
@@ -49,7 +55,3 @@ async def main(argv, interrupter=None):
                 await stopper()
     except KeyboardInterrupt:
         print('')
-
-
-if __name__ == '__main__':
-    asyncio.run(main(sys.argv[1:]))

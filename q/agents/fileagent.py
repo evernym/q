@@ -1,5 +1,12 @@
 """An SSI agent that interacts through the file system."""
 
+if __name__ == '__main__':
+    import sys
+    print(f"You can't run a script from inside a python package.\n" +
+        "See https://www.python.org/dev/peps/pep-0366/\n" +
+        "Run bin/<this script name> instead.")
+    sys.exit(1)
+
 import os
 import json
 import datetime
@@ -93,7 +100,7 @@ async def main():
     await agent.open_wallet()
     await agent.run()
 
-if __name__ == '__main__':
+
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
