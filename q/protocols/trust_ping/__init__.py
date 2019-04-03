@@ -1,6 +1,6 @@
 '''Implements the trust ping protocol as defined at http://bit.ly/2GfTaEX.'''
 
-from .handler_common import start_msg, finish_msg
+from ..common import start_msg, finish_msg
 
 PING_MSG_TYPE = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/trust_ping/1.0/ping'
 PING_RESPONSE_MSG_TYPE = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/trust_ping/1.0/ping_response'

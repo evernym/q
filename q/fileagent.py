@@ -12,9 +12,9 @@ import logging
 
 from . import log_helpers
 from . import baseagent
-from . import file_transport
 from . import handlers
 from . import handler_common
+from .transports import file_transport
 
 from indy import crypto, did, wallet
 
