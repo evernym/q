@@ -1,14 +1,14 @@
-'''
+"""
 A pluggable relay that lets you translate any agent transport into
 any different transport, for arbitrary testing scenarios.
-'''
+"""
 
 import sys
 import argparse
 import logging
 import asyncio
 
-import transports
+from . import transports
 
 
 async def relay(src, dests):

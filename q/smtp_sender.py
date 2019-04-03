@@ -12,6 +12,7 @@ TO_PAT = re.compile('to=((?:[A-Za-z0-9][^=&@]*)@(?:[^.=&]+)[.](?:[^.=&]+[^=&]*))
 
 EXAMPLE = 'smtp://user:pass@mail.my.org:234?from=sender@x.com&to=recipient@y.com'
 
+
 class Sender:
 
     def __init__(self, endpoint):

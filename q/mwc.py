@@ -1,6 +1,6 @@
 import re
 
-import mtc
+from . import mtc
 
 
 def _make_json_key_value_pat(key):

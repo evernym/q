@@ -14,7 +14,7 @@ def _load_plugins(class_name):
         m = pat.match(item)
         if m:
             plugin = m.group(1)
-            x = importlib.import_module(plugin)
+            x = importlib.import_module(f'..{plugin}', __name__)
             cls = getattr(x, class_name)
             item = PluginInfo(plugin, cls, x.PAT, x.EXAMPLE)
             # Move file plugin to the end since it matches anything.

@@ -2,14 +2,13 @@ import asyncio
 import pytest
 from unittest.mock import patch, call
 
-import helpers
-import smtp_sender
+from .. import smtp_sender
 
 
 @pytest.mark.asyncio
 async def test_smtp_send():
     # Mock the class that imap_receiver creates when it builds an imap session.
-    with patch('smtp_sender.smtplib.SMTP', autospec=True) as patched:
+    with patch(__name__ + '.smtp_sender.smtplib.SMTP', autospec=True) as patched:
         # patched.return_value = the mock that's returned from the constructor
         # of the class.
         mock = patched.return_value

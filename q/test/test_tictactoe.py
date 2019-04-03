@@ -1,9 +1,8 @@
 import unittest
 import random
 
-import helpers
-import ttt_game as game
-import ttt_ai as ai
+from .. import ttt_game as game
+from .. import ttt_ai as ai
 
 
 class GameTest(unittest.TestCase):

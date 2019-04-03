@@ -4,8 +4,7 @@ import pytest
 import tempfile
 from unittest.mock import patch, call
 
-import helpers
-import imap_receiver
+from .. import imap_receiver
 
 _DATA_FILES_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data_files')
 
@@ -122,7 +121,7 @@ async def test_receive_from_local_queue(inmemrec):
 @pytest.mark.asyncio
 async def test_receive_over_mocked_imap(inmemrec):
     # Mock the class that imap_receiver creates when it builds an imap session.
-    with patch('imap_receiver.imaplib.IMAP4_SSL', autospec=True) as patched:
+    with patch(__name__ + '.imap_receiver.imaplib.IMAP4_SSL', autospec=True) as patched:
         # patched.return_value = the mock that's returned from the constructor
         # of the class.
         mock = patched.return_value

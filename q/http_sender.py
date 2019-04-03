@@ -4,6 +4,7 @@ import re
 PAT = re.compile('https?://.+$')
 EXAMPLE = 'https://x.com/abc'
 
+
 class Sender:
     def __init__(self, endpoint):
         self.endpoint = endpoint

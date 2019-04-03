@@ -1,6 +1,4 @@
-import helpers
-import mtc
-import mwc
+from .. import mtc, mwc
 
 PARTIAL_TRUST = mtc.MessageTrustContext(confidentiality=True, authenticated_origin=True)
 

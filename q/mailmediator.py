@@ -10,11 +10,12 @@ import json
 import datetime
 import asyncio
 
-import log_helpers
-import mail_transport
-import handlers
-import handler_common
 from indy import crypto, did, wallet
+
+from . import log_helpers
+from . import mail_transport
+from . import handlers
+from . import handler_common
 
 class Agent():
 

@@ -1,10 +1,9 @@
 import uuid
 import aiofiles
 from asyncio.coroutines import os
-import logging
 
-import mwc
-import log_helpers
+from . import mwc
+from . import log_helpers
 
 _MSG_EXT = '.msg'
 

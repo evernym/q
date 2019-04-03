@@ -1,4 +1,4 @@
-import file_transport
+from . import file_transport
 
 class _FakeRegex:
     def match(self, str):

@@ -10,11 +10,11 @@ import asyncio
 import configargparse
 import logging
 
-import log_helpers
-import baseagent
-import file_transport
-import handlers
-import handler_common
+from . import log_helpers
+from . import baseagent
+from . import file_transport
+from . import handlers
+from . import handler_common
 
 from indy import crypto, did, wallet
 

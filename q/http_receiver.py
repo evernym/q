@@ -4,7 +4,7 @@ import re
 import threading
 import logging
 
-import mwc
+from . import mwc
 
 PAT = re.compile('^http(s)?://([^:/]+)(?::([0-9]{1,5}))?(?:/(.*))?$')
 EXAMPLE = 'http://localhost:8080'

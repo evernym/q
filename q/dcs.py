@@ -6,9 +6,9 @@ import re
 
 import indy
 
-import baseagent
-import transports
-import fake_identities
+from . import baseagent
+from . import transports
+from . import fake_identities
 
 NAMED_KEYS_PAT = re.compile('|'.join(fake_identities.ALL_NAMES), re.I)
 

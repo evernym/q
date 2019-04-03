@@ -8,9 +8,9 @@ import aiohttp
 from aiohttp import web
 from unittest.mock import patch, call
 
-import helpers
-import polyrelay
-import file_transport
+from .. import polyrelay
+from .. import file_transport
+from .. import smtp_sender
 
 
 class Interrupter:
@@ -113,7 +113,7 @@ async def test_tee(scratch_space):
 
 @pytest.mark.asyncio
 async def test_to_email_with_mock(scratch_space):
-    with patch('smtp_sender.smtplib.SMTP', autospec=True) as p:
+    with patch(__name__ + '.smtp_sender.smtplib.SMTP', autospec=True) as p:
         await run_relay_from_file(scratch_space,
             ['smtp://user:pass@mail.my.org:234?from=sender@x.com&to=recipient@y.com'])
         # Guarantee that we exited normally and that we did in fact call
