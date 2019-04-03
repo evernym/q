@@ -1,4 +1,4 @@
 @echo off
 title dcs
-python "%~dp0\dcs.py" %*
+python "%~dp0\..\q\dcs.py" %*
 title 
