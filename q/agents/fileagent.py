@@ -1,25 +1,22 @@
-#!/usr/bin/env python
-
-# '''An SSI agent that interacts through the file system.'''
+"""An SSI agent that interacts through the file system."""
 
 import os
-import sys
 import json
 import datetime
 import asyncio
 import configargparse
 import logging
 
-from . import log_helpers
-from . import baseagent
-from . import handlers
-from . import handler_common
-from .transports import file_transport
+from .. import log_helpers
+from . import base
+from .. import protocols
+from ..protocols import common
+from ..transports import file_transport
 
 from indy import crypto, did, wallet
 
 
-class Agent(baseagent.Agent):
+class Agent(base.Agent):
 
     def __init__(self):
         super().__init__()
@@ -54,7 +51,7 @@ class Agent(baseagent.Agent):
                 for handler in candidates:
                     if handler.handle(wc, self):
                         resp = handler.handle(wc, self)
-                        msg_to_encrypt = handler_common.finish_msg(resp)
+                        msg_to_encrypt = common.finish_msg(resp)
                         encrypted = loop.run_until_complete(self.securemsg.encryptMsg(msg_to_encrypt))
                         self.trans.send(encrypted, wc.sender, wc.in_reply_to, wc.subject)
                         handled = True
@@ -62,13 +59,13 @@ class Agent(baseagent.Agent):
             if not handled:
                 etxt = 'Unhandled message -- unsupported @type %s with %s.' % (typ, wc)
                 logging.warning(etxt)
-                self.trans.send(handler_common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
+                self.trans.send(common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
             else:
                 logging.debug('Handled message of @type %s.' % typ)
         else:
             etxt = 'Unhandled message -- missing @type with %s.' % wc
             logging.warning(etxt)
-            self.trans.send(handler_common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
+            self.trans.send(common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
         return handled
 
     async def run(self):
@@ -84,7 +81,7 @@ class Agent(baseagent.Agent):
                 except KeyboardInterrupt:
                     return
                 except json.decoder.JSONDecodeError as e:
-                    self.trans.send(handler_common.problem_report(wc, str(e)), wc.sender, wc.in_reply_to, wc.subject)
+                    self.trans.send(common.problem_report(wc, str(e)), wc.sender, wc.in_reply_to, wc.subject)
                 except:
                     log_helpers.log_exception()
         finally:

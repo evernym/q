@@ -6,14 +6,14 @@ import re
 
 import indy
 
-from . import baseagent
-from . import transports
-from . import fake_identities
+from .. import transports
+from . import base
+from .. import fake_identities
 
 NAMED_KEYS_PAT = re.compile('|'.join(fake_identities.ALL_NAMES), re.I)
 
 
-class Agent(baseagent.Agent):
+class Agent(base.Agent):
     def __init__(self):
         super().__init__()
         # Object isn't fully inited; must call .configure() next.
@@ -96,9 +96,3 @@ async def main():
     agent = Agent()
     args = agent.configure()
     await agent.send(args.msg, args.to)
-
-if __name__ == '__main__':
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print('')

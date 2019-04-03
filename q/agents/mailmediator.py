@@ -12,12 +12,14 @@ import asyncio
 
 from indy import crypto, did, wallet
 
-from . import log_helpers
-from . import mail_transport
-from . import handlers
-from . import handler_common
+from .. import log_helpers
+from . import base
+from ..transports import imap_receiver
+from ..transports import smtp_sender
+from .. import protocols
+from ..protocols import common
 
-class Agent():
+class Agent(base.Agent):
 
     def __init__(self, cfg=None, transport=None, securemsg=None):
         self.cfg = cfg
@@ -44,7 +46,7 @@ class Agent():
                 for handler in candidates:
                     if handler.handle(wc, self):
                         resp = handler.handle(wc, self)
-                        msg_to_encrypt = handler_common.finish_msg(resp)
+                        msg_to_encrypt = common.finish_msg(resp)
                         encrypted = loop.run_until_complete(self.securemsg.encryptMsg(msg_to_encrypt))
                         self.trans.send(encrypted, wc.sender, wc.in_reply_to, wc.subject)
                         handled = True
@@ -52,13 +54,13 @@ class Agent():
             if not handled:
                 etxt = 'Unhandled message -- unsupported @type %s with %s.' % (typ, wc)
                 logging.warning(etxt)
-                agent.trans.send(handler_common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
+                agent.trans.send(common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
             else:
                 logging.debug('Handled message of @type %s.' % typ)
         else:
             etxt = 'Unhandled message -- missing @type with %s.' % wc
             logging.warning(etxt)
-            agent.trans.send(handler_common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
+            agent.trans.send(common.problem_report(wc, etxt), wc.sender, wc.in_reply_to, wc.subject)
         return handled
 
     def fetch_msg(self):
@@ -92,7 +94,7 @@ class Agent():
                 except KeyboardInterrupt:
                     sys.exit(0)
                 except json.decoder.JSONDecodeError as e:
-                    agent.trans.send(handler_common.problem_report(wc, str(e)), wc.sender, wc.in_reply_to, wc.subject)
+                    agent.trans.send(common.problem_report(wc, str(e)), wc.sender, wc.in_reply_to, wc.subject)
                 except:
                     log_helpers.log_exception()
         finally:

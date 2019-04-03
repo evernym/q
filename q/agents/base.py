@@ -2,7 +2,6 @@ import inspect
 import logging
 import os
 
-
 from indy import wallet
 
 DEFAULT_AGENT_LOG_LEVEL = 'DEBUG'

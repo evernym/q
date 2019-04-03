@@ -8,7 +8,7 @@ import argparse
 import logging
 import asyncio
 
-from . import transports
+from .. import transports
 
 
 async def relay(src, dests):
