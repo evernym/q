@@ -44,7 +44,7 @@ class Agent(base.Agent):
                 'ALICE+ALICE_EXTRA_EDGE. Multiple TO args become a route, from srcward to ' +
                 'destward (so first arg would be mediator).')
         args = super().configure(parser)
-        self.dest = transports.load(args.dest, True)
+        self.dest = transports.load(args.dest, transports.SENDERS)
         return args
 
     async def norm_sender_key(self, key_name):

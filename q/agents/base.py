@@ -60,7 +60,7 @@ class Agent:
         if not os.path.isdir(self.folder):
             os.makedirs(self.folder, exist_ok=True)
         log_fname = os.path.join(self.folder, self.deriving_module_name + '.log')
-        if args.rl:
+        if hasattr(args, 'rl') and args.rl:
             if os.path.exists(log_fname):
                 os.unlink(log_fname)
         logging.basicConfig(
@@ -73,7 +73,7 @@ class Agent:
 
     async def unpack(self, wc):
         if 'protected' in wc.raw:
-            wc.unpacked = json.loads(await indy.crypto.unpack_message(self.wallet_handle, wc.raw))
+            wc.unpacked = json.loads(await indy.crypto.unpack_message(self.wallet_handle, wc.raw.encode('utf-8')))
             wc.tc.confidentiality = True
             wc.tc.integrity = True
             if wc.get('sender_verkey', None):
