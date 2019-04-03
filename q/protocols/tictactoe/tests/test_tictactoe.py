@@ -1,8 +1,8 @@
 import unittest
 import random
 
-from .. import ttt_game as game
-from .. import ttt_ai as ai
+from .. import game
+from .. import ai
 
 
 class GameTest(unittest.TestCase):

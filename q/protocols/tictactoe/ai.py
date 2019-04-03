@@ -1,6 +1,6 @@
 import random
 
-from . import ttt_game as game
+from . import game
 
 def winnable_in_n_moves(line:list, cells, player:str):
     # Tells how many moves would get 3-in-a-row on a given

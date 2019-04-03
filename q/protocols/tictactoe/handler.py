@@ -1,6 +1,6 @@
-from . import ttt_game as game
-from . import ttt_ai as ai
-from .handler_common import start_msg, finish_msg, problem_report, get_thread_id
+from . import game
+from . import ai
+from ...handler_common import start_msg, finish_msg, problem_report, get_thread_id
 
 MOVE_MSG_TYPE = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/tictactoe/1.0/move'
 OUTCOME_MSG_TYPE = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/tictactoe/1.0/outcome'

@@ -4,9 +4,9 @@ import pytest
 import tempfile
 from unittest.mock import patch, call
 
-from ..transports import imap_receiver
+from .. import imap_receiver
 
-_DATA_FILES_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data_files')
+_DATA_FILES_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../data_files')
 
 
 class InMemoryQueue:
