@@ -24,7 +24,8 @@ def _load_plugins():
     import os
     my_folder = os.path.dirname(os.path.abspath(__file__))
     for item in os.listdir(my_folder):
-        if item == 'tests' or item.startswith('_') or '.' in item or not os.path.isdir(os.path.join(my_folder, item)):
+        if item == 'tests' or item.startswith('_') or ('.' in item) or (
+                not os.path.isdir(os.path.join(my_folder, item))):
             continue
         handler = importlib.import_module(f'.{item}', __name__)
         _register(handler)
