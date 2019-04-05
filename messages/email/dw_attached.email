@@ -1,0 +1,107 @@
+Delivered-To: indyagent1@gmail.com
+Received: by 2002:a17:90a:10f:0:0:0:0 with SMTP id b15-v6csp2225235pjb;
+        Sat, 8 Dec 2018 20:26:28 -0800 (PST)
+X-Received: by 2002:a24:7954:: with SMTP id z81mr6515345itc.94.1544329588357;
+        Sat, 08 Dec 2018 20:26:28 -0800 (PST)
+ARC-Seal: i=1; a=rsa-sha256; t=1544329588; cv=none;
+        d=google.com; s=arc-20160816;
+        b=Hhlaxf6fZAUmedTcvYLZS9tmCCrR9UWcE4L3uqFqLb6R9HEMzRCROyWsqSeRqDFr55
+         KCBr5tm1kbhdXDD+Hwx01HcQNqMFOI0PHzNESb9yvSdZwe/i4RtdrVFWHkm2EP96B05O
+         ohQA9YfvWbd5UFCLBuQHaMtcX75s9VLwsFvdGXbZwBk5PyIqRVKDzPLWxxko1GJ93mlf
+         mK0KOHXGL0ostR0wysbIc1w5Y05lgs6lzHiaxvYZ0U6J0albrn5Sr01x/inmcQH4aD1F
+         7xoatTgldy+dsa++bVC83Xd5XkSIhQDCmpW5H57HweQfSljO2dnqtT8jOVzGm9IE9eHR
+         AF6Q==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20160816;
+        h=to:subject:message-id:date:from:reply-to:mime-version
+         :dkim-signature;
+        bh=xBAgUQnFlPD5oKwZVrQzMT3AEvlT11hHT03FY1MlL/8=;
+        b=d+Zrd81BtLjr1jXzVyZAEN/P98MDQ/tZsp5RQD7msKUn3v0Z5Ynt+hduBBuC4ra45G
+         Z3L2M9m7IdSwTxsK0VziTKT7BZGVc9SbWIMZ90mRQ0+HYUFCW5sdp/lWRplINLERqMbi
+         4zt0iP+MXUGBW/9wWgqRtVQsSVkhTS/LDBhJjB+jZn86UR6XP5uMLUe+jzcdNqfKemlY
+         gUDwTZkn9PzZC/7oVh9bwzDqRkpe/GufM2aZ2Xj1xoCu1tvwM5CjSnGVvh0aqRXYCd9q
+         LKt3HinyUw+ilbaqXGJNmbZG7lcec/fsHwIhGpY3ELP8sBhPjn3JzBQB2YcOtjKh19+r
+         IO5w==
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@gmail.com header.s=20161025 header.b=RUO2Cpx4;
+       spf=pass (google.com: domain of daniel.hardman@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=daniel.hardman@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com
+Return-Path: <daniel.hardman@gmail.com>
+Received: from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])
+        by mx.google.com with SMTPS id z13sor3956347iog.76.2018.12.08.20.26.28
+        for <indyagent1@gmail.com>
+        (Google Transport Security);
+        Sat, 08 Dec 2018 20:26:28 -0800 (PST)
+Received-SPF: pass (google.com: domain of daniel.hardman@gmail.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@gmail.com header.s=20161025 header.b=RUO2Cpx4;
+       spf=pass (google.com: domain of daniel.hardman@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=daniel.hardman@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20161025;
+        h=mime-version:reply-to:from:date:message-id:subject:to;
+        bh=xBAgUQnFlPD5oKwZVrQzMT3AEvlT11hHT03FY1MlL/8=;
+        b=RUO2Cpx43foPaCnqyyPOTVPuyxRiMpLixvP3sUpDn3oL6Z5lJyb2AQbUQEdRw0u4oo
+         HL3g2jcNCncFjFa9xLMZhKAHU9sO1AoU+C6YkOVpaZogy+fkvMYjyEP221nVL64Y6mK+
+         ZQ9wjQWTCeDhijNN5NY55mJhi0Ykit5sbY96IkI1YGhS3vy1EwZBwpLJ79w3i9Hva9op
+         wlXgZzjGACAF0+KpkTUgrb04Ez6kETNacghpr+XEWpEq32PEuxRcAfPQYX2XbKQ0Wrr7
+         GykJ1OyreEVnEHVJna/dV8qxj98Lq1B5JhVyO+Lf1YmXtU9HTTRcJofs/sEwTirMaSR7
+         wl5Q==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20161025;
+        h=x-gm-message-state:mime-version:reply-to:from:date:message-id
+         :subject:to;
+        bh=xBAgUQnFlPD5oKwZVrQzMT3AEvlT11hHT03FY1MlL/8=;
+        b=qCTizbFaswhUGwmJYyg5JaXmfA/FsPgsHoKdHckhOb/IQ/MJ8Px3RfHDxhBsDULH/I
+         /lvjpRidQOEQBasakHF/u4M2ScSs54MAjh6loQk5vUAzOve69BwLi1mpt5wvJWpU27GP
+         D0nZsY0gN3knMf62wjEKbI/9azdL+QX1xOJYK+V2M4IWpQ6EZq2FrTOXXEhwPKsTiuAh
+         +/sHgvpZjyQuX554OQrio+LrNvSnCf3W5AnLwgQS2dl5+dV+etiOKhURWZtarQ0wUSPe
+         onrbOsGIa+fK7HKeAGhzAuwphPeDhio0jNOK9RZ+heIFxi/p/6bCUZ0tuSjmgBd594kn
+         tQYQ==
+X-Gm-Message-State: AA+aEWY5fRCqXSASO1KG12aKaTXrQAzLvjbtBBrTWe4xZ5JiHrxZZHgv
+	W07zeBob3thHphgz8M9Mtf0VXmTwmnxH7t+dTZLvyA==
+X-Google-Smtp-Source: AFSGD/UWiuD21MgyMQX8ooxiymbyx+ntMsKk2R8+IrbhLiLD0KWt3mxCeZHAiOAE2IQH7HHrDSKaaeRvOrKP9bZzdCM=
+X-Received: by 2002:a5d:96cc:: with SMTP id r12mr6537800iol.80.1544329587546;
+ Sat, 08 Dec 2018 20:26:27 -0800 (PST)
+MIME-Version: 1.0
+Reply-To: daniel.hardman@gmail.com
+From: fred@flintstones.org
+Date: Sat, 8 Dec 2018 21:26:16 -0700
+Message-ID: <CACU_chnzp=NPYTmxGdJ0485Rscn84AwnFO9WE5nRYpx5JBZ9pA@mail.gmail.com>
+Subject: test
+To: indyagent1@gmail.com
+Content-Type: multipart/mixed; boundary="0000000000007b9c1d057c8f400d"
+
+--0000000000007b9c1d057c8f400d
+Content-Type: multipart/alternative; boundary="0000000000007b9c1b057c8f400b"
+
+--0000000000007b9c1b057c8f400b
+Content-Type: text/plain; charset="UTF-8"
+
+
+
+--0000000000007b9c1b057c8f400b
+Content-Type: text/html; charset="UTF-8"
+
+<div dir="ltr"><br></div>
+
+--0000000000007b9c1b057c8f400b--
+--0000000000007b9c1d057c8f400d
+Content-Type: application/octet-stream; name="tiny.dw"
+Content-Disposition: attachment; filename="tiny.dw"
+Content-Transfer-Encoding: base64
+Content-ID: <f_jpgdyb2b0>
+X-Attachment-Id: f_jpgdyb2b0
+
+iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAAABGdBTUEAALGPC/xhBQAAACBjSFJN
+AAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAACC2lUWHRYTUw6Y29tLmFkb2Jl
+LnhtcAAAAAAAPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1Q
+IENvcmUgNS40LjAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5
+OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91
+dD0iIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4w
+LyI+CiAgICAgICAgIDx0aWZmOlJlc29sdXRpb25Vbml0PjI8L3RpZmY6UmVzb2x1dGlvblVuaXQ+
+CiAgICAgICAgIDx0aWZmOkNvbXByZXNzaW9uPjE8L3RpZmY6Q29tcHJlc3Npb24+CiAgICAgICAg
+IDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgICAgIDx0aWZmOlBo
+b3RvbWV0cmljSW50ZXJwcmV0YXRpb24+MjwvdGlmZjpQaG90b21ldHJpY0ludGVycHJldGF0aW9u
+PgogICAgICA8L3JkZjpEZXNjcmlwdGlvbj4KICAgPC9yZGY6UkRGPgo8L3g6eG1wbWV0YT4KD0Uq
+kwAAABpJREFUCB1jPLZ1yf//DAwMjEDMBMRwgMIBAJQSBCSuaLq2AAAAAElFTkSuQmCC
+--0000000000007b9c1d057c8f400d--
