@@ -15,6 +15,7 @@ SUPPORTED = {
     }
 }
 
+
 async def handle(wc, agent):
     t = wc.obj.get('@type')
     if t == QUERY_MSG_TYPE:
