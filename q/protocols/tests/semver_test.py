@@ -119,7 +119,6 @@ def test_sort_semvers_prerelease():
     check_less_than(s1A, s1a)
     check_less_than(s1a, s1aa)
 
-
 def test_semver_str():
     ok = True
     for value in VALID:
@@ -131,3 +130,38 @@ def test_semver_str():
             print('Converted %s --> semver --> str, got %s' % (value, str(S(value))))
             ok = False
     assert ok
+
+
+a_1digit = S('1')
+a = S('1.2')
+aa = S('1.2.1')
+aa_prerelease = S('1.2.1-alpha')
+aa_build = S('1.2.1+9876')
+aa_prebuild = S('1.2.1-alpha+9876')
+ab = S('1.2.2')
+b = S('1.3')
+c = S('2.0')
+d = S('0.9')
+e = S('0.8')
+
+def test_semver_sort_self_bug():
+    assert not (aa_prerelease < aa_prerelease)
+
+def test_semver_compatible_with_major_0():
+    assert d.compatible_with(e) == 0
+    assert d.compatible_with(d) == 2
+
+def test_semver_compatible_with_self():
+    assert a.compatible_with(a) == 2
+    assert aa.compatible_with(aa) == 3
+    assert aa_prerelease.compatible_with(aa_prerelease) == 4
+    assert aa_build.compatible_with(aa_build) == 5
+    assert aa_prebuild.compatible_with(aa_prebuild) == 5
+
+def test_semver_compatible_with():
+    assert a_1digit.compatible_with(c) == 0
+    assert abs(a_1digit.compatible_with(a)) == 1
+    assert abs(a.compatible_with(b)) == 1
+    assert abs(a.compatible_with(aa)) == 2
+    assert abs(a.compatible_with(ab)) == 2
+    assert abs(aa.compatible_with(ab)) == 2

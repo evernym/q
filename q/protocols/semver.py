@@ -48,8 +48,9 @@ def _compare_prerelease(a, b):
         # or lexically.
         a = a.split('.')
         b = b.split('.')
+        len_a = len(a)
         len_b = len(b)
-        for i in range(len(a)):
+        for i in range(len_a):
             if i > len_b:
                 return 1
             # Numeric segments come before non-numeric.
@@ -70,7 +71,7 @@ def _compare_prerelease(a, b):
                 if a[i] > b[i]: return 1
         # If we get here, then none of the segments in a
         # differed with b. Does b have more segments?
-        return 0 if len_b == i else -1
+        return 0 if len_b == len_a else -1
 
 
 def _compare(a, b):
@@ -140,6 +141,36 @@ class Semver:
                 self.patch = self.prerelease = self.build = None
         else:
             self.minor = self.patch = self.prerelease = self.build = None
+
+    def compatible_with(self, other):
+        """
+        Returns an integer that tells how compatible self is with other. If the two semvers don't
+        share even the same major version--or if the major version is 0--the number will be 0. If
+        they share only the same major version, the number will be either 1 or -1, depending on
+        whether this version is greater or less than other. If they share both major and minor
+        versions, the number will be either 2 or -2. If they share major, minor, and patch, it
+        will be 3/-3. If pre-release, 4/-4. If build, 5/-5.
+        See https://github.com/hyperledger/indy-hipe/blob/c9b0888/text/protocols/semver.md#version-negotiation.
+        """
+        compare_sign = -1 if self < other else 1
+        if self.major != other.major:
+            return 0
+        # Version 0 is special; you have to have major AND minor equal before we will believe
+        # in any compatibility. This means that 1 is never a valid answer when major == 0 -- it's
+        # either 0 or a number with absolute value bigger than 1.
+        if self.major == 0: # then other.major == 0, too
+            if self.minor != other.minor:
+                return 0
+        else:
+            if (self.minor != other.minor) or (self.minor is None):
+                return 1 * compare_sign
+        if (self.patch != other.patch) or (self.patch is None):
+            return 2 * compare_sign
+        if self.prerelease != other.prerelease:
+            return 3 * compare_sign
+        if (self.build != other.build) or (self.build is None):
+            return 4 * compare_sign if self.prerelease else 3
+        return 5 * compare_sign
 
     def __str__(self):
         return self.value
