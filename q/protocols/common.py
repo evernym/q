@@ -3,27 +3,12 @@ import uuid
 import datetime
 import re
 
+from ..protocols import HANDLERS
+
 PROBLEM_REPORT_MSG_TYPE = "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/notification/1.0/problem-report"
 
 _ID_PAT = re.compile(r'"@id"\s*:\s*"([^"]*)"')
 _THID_PAT = re.compile(r'"~thread"\s*:\s*{[^{}]*"thid"\s*:\s*"([^"]*)"')
-
-
-def msg_type_split(mtype):
-    """Split a message type identifier into a 4-tuple of
-    (fully-qualified protocol name, short protocol name, version, message type).
-    Return None where identifier is degenerate"""
-    i = mtype.rfind('/')
-    if i:
-        j = mtype.rfind('/', 0, i - 1)
-        if j:
-            k = j - 1
-            while k >= 0:
-                if mtype[k] in '/;':
-                    break
-                k -= 1
-            return (mtype[:j], mtype[k + 1:j], mtype[j + 1:i], mtype[i+1:])
-
 
 def start_msg(typ: str, thid: str = None, in_time: datetime.datetime = None):
     msg = {}

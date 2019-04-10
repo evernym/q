@@ -1,20 +1,19 @@
 from . import game
 from . import ai
 from ..common import start_msg, finish_msg, problem_report, get_thread_id
+from ...protocols import compare_identifiers
 
-MOVE_MSG_TYPE = 'did:sov:SLfEi9esrjzybysFxQZbfq;spec/tictactoe/1.0/move'
-OUTCOME_MSG_TYPE = 'did:sov:SLfEi9esrjzybysFxQZbfq;spec/tictactoe/1.0/outcome'
+MOVE_MSG_TYPE = 'move'
+OUTCOME_MSG_TYPE = 'outcome'
 
-TYPES = [
-    MOVE_MSG_TYPE,
-    OUTCOME_MSG_TYPE
+SUPPORTED = [
+    ('did:sov:SLfEi9esrjzybysFxQZbfq;spec/tictactoe/1.0', [MOVE_MSG_TYPE, OUTCOME_MSG_TYPE], ['player'])
 ]
 
 
-async def handle(wc, agent):
+async def handle(wc, parsed_type, agent):
     try:
-        t = wc.obj['@type']
-        if t == MOVE_MSG_TYPE:
+        if compare_identifiers(parsed_type.msg_type_name, MOVE_MSG_TYPE) == 0:
             moves = wc.obj.get('moves', [])
             if not isinstance(moves, list) or len(moves) > 9:
                 raise Exception('Expected "moves" to be a list of at most 9 items.')
@@ -44,9 +43,7 @@ async def handle(wc, agent):
             await agent.trans.send(msg)
             return True
 
-        elif t == OUTCOME_MSG_TYPE:
+        elif compare_identifiers(parsed_type.msg_type_name, OUTCOME_MSG_TYPE) == 0:
             return True
-        else:
-            return False
     except Exception as e:
         await agent.trans.send(problem_report(wc, str(e)))

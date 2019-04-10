@@ -48,12 +48,11 @@ class Agent(base.Agent):
         await self.unpack(wc)
         typ = wc.obj.get('@type')
         if typ:
-            candidates = protocols.HANDLERS_BY_MSG_TYPE.get(typ)
-            if candidates:
-                for handler in candidates:
-                    if await handler.handle(wc, self):
-                        handled = True
-                        break
+            parsed_type = protocols.parse_msg_type(typ)
+            handler = protocols.find_handler(parsed_type)
+            if handler:
+                if await handler.handle(wc, parsed_type, self):
+                    handled = True
             if not handled:
                 etxt = 'Unhandled message -- unsupported @type %s with %s.' % (typ, wc)
                 logging.warning(etxt)
