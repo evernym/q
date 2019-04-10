@@ -117,7 +117,13 @@ class Semver:
             value = value.value
         m = PAT.match(value)
         if not m:
-            complain('regex fails')
+            if len(value) > 25:
+                value = value[:22] + '...'
+            if '\n' in value or '\r' in value or '\t' in value:
+                value = repr(value)
+            else:
+                value = '"%s"' % value
+            complain('regex fails on %s' % value)
         self.value = value
         g = m.groups()
         self.major = int(g[0])
@@ -127,13 +133,13 @@ class Semver:
                 self.patch = int(g[2])
                 if g[3]:
                     if _LEADING_ZEROS_PAT.search(g[3]):
-                        complain('leading zeros')
+                        complain('leading zeros in prerelease "%s"' % g[3])
                     self.prerelease = g[3]
                 else:
                     self.prerelease = None
                 if g[4]:
                     if _LEADING_ZEROS_PAT.search(g[4]):
-                        complain('leading zeros')
+                        complain('leading zeros in build "%s"' % g[4])
                     self.build = g[4]
                 else:
                     self.build = None

@@ -165,3 +165,12 @@ def test_semver_compatible_with():
     assert abs(a.compatible_with(aa)) == 2
     assert abs(a.compatible_with(ab)) == 2
     assert abs(aa.compatible_with(ab)) == 2
+
+def test_semver_bad_regex_reports_bad_text():
+    ex_text = ''
+    try:
+        s = S('abc')
+        ex_text = "No exception raised!"
+    except AssertionError as ex:
+        ex_text = str(ex)
+    assert 'abc' in ex_text
