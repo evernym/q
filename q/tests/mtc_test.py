@@ -1,29 +1,36 @@
-from .. import mtc
+from ..mtc import *
 
-PARTIAL_TRUST = mtc.MessageTrustContext(True, False, True)
-
-
-def test_ZERO_TRUST():
-    assert not bool(mtc.ZERO_TRUST)
+ZERO = MessageTrustContext()
+PARTIAL = MessageTrustContext(INTEGRITY | CONFIDENTIALITY)
 
 
-def test_PARTIAL_TRUST():
-    assert PARTIAL_TRUST
+def test_zero_trust():
+    assert '0' == ZERO.initials
+    assert '0' == str(ZERO)
+    assert '0' == ZERO.labels
 
 
-def test_str_ZERO_TRUST():
-    assert 'zero trust' == str(mtc.ZERO_TRUST)
+def test_partial_trust():
+    assert 'ci' == PARTIAL.initials
+    assert 'ci' == str(PARTIAL)
+    assert 'confidentiality, integrity' == PARTIAL.labels
 
 
-def test_str_ZERO_TRUST():
-    assert 'confidentiality, authenticated_origin' == str(PARTIAL_TRUST)
+def test_flag_changes():
+    x = MessageTrustContext()
+    assert (SIZE_OK & x.flags) == 0
+    assert '0' == x.initials
+    x.flags |= (SIZE_OK | VALUES_OK)
+    assert 'sv' == x.initials
+    assert 'size, values' == x.labels
+    x.flags &= ~SIZE_OK
+    assert 'v' == x.initials
+    assert 'values' == x.labels
 
+def test_from_initials():
+    x = MessageTrustContext.from_initials("sA.n ")
+    assert x.flags == SIZE_OK | AUTHENTICATED_ORIGIN | NONREPUDIATION
 
-def test_as_json():
-    assert '{"confidentiality": true, "integrity": false, "authenticated_origin": true, ' + \
-        '"non_repudiation": false, "input_validations": []}' == PARTIAL_TRUST.as_json()
-
-
-if __name__ == '__main__':
-    import pytest
-    pytest.main([__file__])
+def test_from_labelsinitials():
+    x = MessageTrustContext.from_labels("Integrity, ,,Confidentiality")
+    assert x.flags == INTEGRITY | CONFIDENTIALITY
