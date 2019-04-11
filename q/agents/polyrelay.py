@@ -19,8 +19,14 @@ from .. import transports
 async def relay(src, dests):
     mwc = await src.receive()
     if mwc is not None:
-        for dest in dests:
-            await dest.send(mwc.raw)
+        data = mwc.ciphertext
+        if not data:
+            data = mwc.plaintext
+        if data:
+            for dest in dests:
+                await dest.send(data)
+        else:
+            logging.info('No useful data from message.')
         return mwc
 
 

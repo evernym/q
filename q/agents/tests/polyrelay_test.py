@@ -10,7 +10,7 @@ from unittest.mock import patch, call
 
 from .. import polyrelay
 from ...transports import file_transport
-from ...transports import smtp_sender
+from ...transports import smtp_sender # must be imported despite lack of usage, because mock finds it by name
 
 
 class Interrupter:
@@ -95,7 +95,7 @@ async def relay_to_and_from_files(scratch_space, dest_count):
             fdest = file_transport.FileTransport(dest, folder_is_destward=False)
             x = await fdest.receive()
             assert x is not None
-            assert x.raw == "hello"
+            assert x.plaintext == "hello"
     finally:
         for dd in destdirs:
             dd.cleanup()
@@ -153,7 +153,7 @@ async def test_from_http(scratch_space):
     # *read* from the /a subdir.
     f = file_transport.FileTransport(scratch_space.name, folder_is_destward=False)
     x = await f.receive()
-    assert x.raw == 'hello'
+    assert x.plaintext == 'hello'
 
 
 if __name__ == '__main__':

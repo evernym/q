@@ -48,7 +48,7 @@ def get_thread_id(wc):
         if not thid:
             thid = wc.obj.get('@id')
         return thid
-    return get_thread_id_from_text(wc.raw)
+    return get_thread_id_from_text(wc.ciphertext)
 
 
 def problem_report(wc, explain, code: str = None, catalog: str = None):

@@ -2,6 +2,5 @@
     "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation",
     "@id": "12345678900987654321",
     "label": "Alice",
-    "key": "8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K",
-    "endpoint": "https://example.com/endpoint"
+    "did": "did:sov:QmWbsNYhMrjHiqZDTUTEJs"
 }

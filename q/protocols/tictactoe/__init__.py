@@ -39,7 +39,7 @@ async def handle(wc, parsed_type, agent):
             # Okay, build response and return to sender.
             msg = finish_msg(resp)
             if wc.sender:
-                msg = await agent.pack(msg, wc.unpacked.get('recipient_verkey'), wc.sender)
+                msg = await agent.pack(msg, wc.plaintext.get('recipient_verkey'), wc.sender)
             await agent.trans.send(msg)
             return True
 

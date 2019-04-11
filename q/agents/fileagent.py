@@ -42,8 +42,6 @@ class Agent(base.Agent):
         self.trans = file_transport.FileTransport(self.queue_dir, folder_is_destward=False)
 
     async def handle_msg(self, wc):
-        # Record when we received this message.
-        wc.in_time = datetime.datetime.utcnow()
         handled = False
         await self.unpack(wc)
         typ = wc.obj.get('@type')
