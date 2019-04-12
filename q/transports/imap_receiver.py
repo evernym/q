@@ -9,6 +9,7 @@ import re
 from .. import log_helpers
 from .. import mtc
 from .. import mwc
+from .. import data_formats
 
 PAT = re.compile('^imap://([A-Za-z0-9][^@:]*):([^@]*)@(.+):([0-9]{1,5})$')
 EXAMPLE = 'imap://user:pass@imapserver:993'
@@ -83,7 +84,6 @@ _PREFERRED_EXT_PATS = [
     re.compile(r'(?i).*\.json$'),
     re.compile(r'(?i).*\.dat$')
 ]
-_JSON_CONTENT_PAT = re.compile(r'(?s)\s*({.*})')
 
 _BAD_MSGS_FOLDER = 'bad_msgs'
 
@@ -110,7 +110,7 @@ class Receiver:
             queue = MailQueue()
         self.queue = queue
 
-    def bytes_to_mwc(self, msg_bytes):
+    def bytes_to_mwc(self, msg_bytes) -> mwc.MessageWithContext:
         """
         Look through an email to find the didcomm message it contains. Return a
         mwc.MessageWithContext, which may be empty if nothing is found.
@@ -126,7 +126,7 @@ class Receiver:
             msg = email.message_from_bytes(msg_bytes)
             best_part_ext_idx = 100
             best_part = None
-            wc = mwc.MessageWithContext()
+            wc = None
             for part in msg.walk():
                 if not part.is_multipart():
                     fname = part.get_filename()
@@ -144,20 +144,14 @@ class Receiver:
                                         break
                     elif (not wc) and (part.get_content_type() == 'text/plain'):
                         this_txt = part.get_payload()
-                        match = _JSON_CONTENT_PAT.match(this_txt)
-                        if match:
-                            wc.raw = match.group(1)
+                        if data_formats.is_likely_json(this_txt):
+                            wc = mwc.MessageWithContext(this_txt)
 
             if best_part:
-                wc.raw = best_part.get_payload(decode=True)
-                if best_part_ext_idx < 2:
-                    # TODO: decrypt and then, if authcrypted, add authenticated_origin in
-                    wc.tc = mtc.MessageTrustContext(confidentiality=True, integrity=True)
-            elif wc.raw:
-                wc.tc = mtc.MessageTrustContext()
-            else:
+                wc = mwc.MessageWithContext(best_part.get_payload(decode=True))
+            elif not wc:
                 fname = _save_bad_msg(msg)
-                logging.error('No useful a2a message found in %s/%s. From: %s; Date: %s; Subject: %s.' % (
+                logging.error('No useful DIDComm message found in %s/%s. From: %s; Date: %s; Subject: %s.' % (
                     _BAD_MSGS_FOLDER, fname,
                     msg.get('from', 'unknown sender'), msg.get('date', 'at unknown time'), msg.get('subject', 'empty')
                 ))

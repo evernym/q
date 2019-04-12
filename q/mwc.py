@@ -1,62 +1,137 @@
+import datetime
+import json
 import re
 
-from . import mtc
+from .mtc import *
+from .data_formats import *
 
-
-def _make_json_key_value_pat(key):
-    pat_txt = r'"%s"\s*:\s*"([^"]+)"' % key
-    return re.compile(pat_txt, re.S)
-
-
-_ID_PAT = _make_json_key_value_pat('@id')
-_TYPE_PAT = _make_json_key_value_pat('@type')
+_ID_PAT = make_json_key_value_pat('@id')
+_TYPE_PAT = make_json_key_value_pat('@type')
 _SQUEEZE_PAT = re.compile('\\s*\n[\t ]*')
+_MSG_TYPE_URI_PAT = re.compile(r'(.*?)([a-z0-9._-]+)/(\d[^/]*)/([a-z0-9._-]+)$')
+
+MAX_MESSAGE_SIZE = 1024 * 1024 * 10
+
+def _check_size(data, tc: MessageTrustContext, force = False):
+    if force:
+        tc.validate(SIZE_OK, False)
+    if force or (tc.flags & SIZE_OK) == 0:
+        if data and (len(data) > MAX_MESSAGE_SIZE):
+            raise ValueError("Size exceeds %d; message can't be processed." % MAX_MESSAGE_SIZE)
+        tc.flags |= SIZE_OK
 
 
 class MessageWithContext:
     """
     Hold a message plus its associated trust context, sender, and other metadata.
+
+    The message must be init'ed with raw message content. Preferably, this content is a
+    byte array, but strings also work. The raw content may be encrypted or not. If encrypted,
+    then the raw content is assigned to .ciphertext, and .plaintext is None until a
+    decryption is performed and .plaintext is assigned. If not encrypted, then .ciphertext is
+    None, but .plaintext is immediately useful.
+
+    .plaintext is always a string.
+
+    Whenever .plaintext is assigned, .obj is also built. .obj is a dict built by deserializing
+    .plaintext. It may be None, if deserialization has failed.
     """
-    def __init__(self, raw: str = None, tc: mtc.MessageTrustContext = None):
-        if isinstance(raw, bytes):
-            raw = raw.decode('utf-8')
-        self.raw = raw
-        self.unpacked = None
-        self.obj = None
+    def __init__(self, raw: bytes = None, tc: MessageTrustContext = None):
+        self.in_time = datetime.datetime.utcnow()
         if tc is None:
-            tc = mtc.MessageTrustContext()
+            tc = MessageTrustContext()
         self.tc = tc
+        self._ciphertext = None
+        self._plaintext = None
+        self._obj = None
+        _check_size(raw, tc)
+        if is_likely_json(raw):
+            if is_likely_wire_format(raw):
+                self._ciphertext = raw
+                tc.flags |= (CONFIDENTIALITY | INTEGRITY)
+                return
+        # If we get here, we don't have reason to believe the message is encrypted.
+        # Therefore, treat it like plaintext.
+        self._set_plaintext_and_obj(raw)
 
     @property
     def sender(self):
-        if self.unpacked:
-            return self.unpacked.get('sender_verkey', None)
+        if self.obj:
+            return self.obj.get('sender_verkey', None)
+
+    @property
+    def ciphertext(self):
+        return self._ciphertext
+
+    @property
+    def plaintext(self):
+        return self._plaintext
+
+    @plaintext.setter
+    def plaintext(self, value):
+        _check_size(value, self.tc, force=True)
+        self._set_plaintext_and_obj(value)
+
+    def _set_plaintext_and_obj(self, value):
+        if isinstance(value, bytes):
+            value = value.decode('utf-8')
+        self._plaintext = value
+        self._obj = None
+        if value:
+            self.tc.flags &= ~JSON_OK
+            try:
+                self._obj = json.loads(value)
+                self.tc.flags |= JSON_OK
+            except:
+                pass # Let caller discover problem on their own
+
+    @property
+    def obj(self):
+        return self._obj
 
     def __bool__(self):
-        return bool(self.raw)
+        return bool(self._ciphertext) or bool(self._plaintext)
 
     def __str__(self):
+        """
+        Provides a short, friendly description of the message, suitable for logging or adding
+        to a problem report.
+        """
         msg_fragment = None
-        if self.raw:
-            raw = self.raw[:300]
+        txt = self.plaintext
+        if txt:
+            txt = txt[:300]
+        else:
+            txt = self.ciphertext
+            if txt:
+                txt = txt[:300]
+                if isinstance(txt, bytes):
+                    txt = txt.decode('utf-8')
+        if txt:
             good_descriptors = []
-            m = _TYPE_PAT.search(raw)
+            m = _TYPE_PAT.search(txt)
             if m:
-                m = m.group(1)
-                i = m.find(';')
-                if i:
-                    m = '...' + m[i + 1:]
+                mturi = m.group(1)
+                m = _MSG_TYPE_URI_PAT.match(mturi)
+                if m:
+                    m = '...' + m.group(2) + '/' + m.group(3) + '/' + m.group(4)
+                else:
+                    i = mturi.find(';')
+                    if i:
+                        m = '...' + mturi[i + 1:]
+                    else:
+                        m = mturi
                 good_descriptors.append('"@type":"%s"' % m)
-            m = _ID_PAT.search(raw)
+            m = _ID_PAT.search(txt)
             if m:
                 good_descriptors.append('"@id":"%s"' % m.group(1))
             if good_descriptors:
                 msg_fragment = '{...%s...}' % ','.join(good_descriptors)
             else:
-                if len(self.raw) <= 40:
-                    msg_fragment = _SQUEEZE_PAT.sub(' ', raw)
+                if len(txt) <= 40:
+                    msg_fragment = _SQUEEZE_PAT.sub(' ', txt)
                 else:
-                    msg_fragment = raw[:60].strip().replace('\r','')
+                    msg_fragment = txt[:60].strip().replace('\r','')
                     msg_fragment = _SQUEEZE_PAT.sub(' ', msg_fragment)
                     msg_fragment = msg_fragment[:37] + '...'
         else:
@@ -64,11 +139,11 @@ class MessageWithContext:
         sender = self.sender if self.sender else 'nobody'
         if len(sender) > 8:
             sender = sender[:8] + '...'
-        return '%s from %s with %s' % (msg_fragment, sender, str(self.tc))
+        return '%s from %s with trust=%s' % (msg_fragment, sender, str(self.tc))
 
     def get_type(self):
-        if self.raw:
-            match = _TYPE_PAT.search(self.raw)
+        if self.ciphertext:
+            match = _TYPE_PAT.search(self.ciphertext)
             if match:
                 return match.group(1)
 

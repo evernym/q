@@ -24,7 +24,7 @@ async def handle(wc, parsed_type, agent):
             msg = start_msg(PING_RESPONSE_MSG_TYPE, thid=wc.obj.get('@id'), in_time=wc.in_time)
             msg = finish_msg(msg)
             if wc.sender:
-                msg = await agent.pack(msg, wc.unpacked.get('recipient_verkey'), wc.sender)
+                msg = await agent.pack(msg, wc.plaintext.get('recipient_verkey'), wc.sender)
             await agent.trans.send(msg)
             return True
         elif compare_identifiers(parsed_type.msg_type_name, PING_RESPONSE_MSG_TYPE):

@@ -5,6 +5,7 @@ import tempfile
 from unittest.mock import patch, call
 
 from .. import imap_receiver
+from ...mtc import *
 
 _DATA_FILES_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../../messages/email')
 
@@ -78,34 +79,33 @@ def _get_mwc_from_sample_email(which):
 
 def test_bytes_to_mwc_dp_body():
     wc = _get_mwc_from_sample_email('dp_body')
-    assert bool(wc.raw)
-    assert not bool(wc.tc)
+    assert bool(wc.plaintext)
 
 
 def test_bytes_to_mwc_jwt_attached(urec):
     raw = _get_sample_email_tweaked('dw_attached', 'tiny.dw', 'tiny.jwt')
     wc = urec.bytes_to_mwc(raw)
-    assert bool(wc.raw)
-    assert 'confidentiality, integrity' in str(wc.tc)
+    assert bool(wc.ciphertext)
+    assert wc.tc.flags & (CONFIDENTIALITY | INTEGRITY) != 0
 
 
 def test_bytes_to_mwc_dw_attached():
     wc = _get_mwc_from_sample_email('dw_attached')
-    assert bool(wc.raw)
-    assert 'confidentiality, integrity' in str(wc.tc)
+    assert bool(wc.ciphertext)
+    assert wc.tc.flags & (CONFIDENTIALITY | INTEGRITY) != 0
 
 
 def test_bytes_to_mwc_dp_attached():
     wc = _get_mwc_from_sample_email('dp_attached')
-    assert bool(wc.raw)
-    assert not bool(wc.tc)
+    assert bool(wc.plaintext)
+    assert wc.tc.flags & (CONFIDENTIALITY | INTEGRITY) == 0
 
 
 def test_bytes_to_mwc_json_attached(urec):
     raw = _get_sample_email_tweaked('dp_attached', 'sample.dp', 'sample.json')
     wc = urec.bytes_to_mwc(raw)
-    assert bool(wc.raw)
-    assert not bool(wc.tc)
+    assert bool(wc.plaintext)
+    assert wc.tc.flags & (CONFIDENTIALITY | INTEGRITY) == 0
 
 @pytest.fixture
 def inmemrec():

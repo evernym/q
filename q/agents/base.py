@@ -72,15 +72,15 @@ class Agent:
         return args
 
     async def unpack(self, wc):
-        if 'protected' in wc.raw:
-            wc.unpacked = json.loads(await indy.crypto.unpack_message(self.wallet_handle, wc.raw.encode('utf-8')))
+        if 'protected' in wc.ciphertext:
+            wc.plaintext = json.loads(await indy.crypto.unpack_message(self.wallet_handle, wc.ciphertext.encode('utf-8')))
             wc.tc.confidentiality = True
             wc.tc.integrity = True
             if wc.get('sender_verkey', None):
                 wc.tc.authenticated_origin = True
         else:
-            wc.unpacked = {'message': json.loads(wc.raw)}
-        wc.obj = wc.unpacked.get('message')
+            wc.plaintext = {'message': json.loads(wc.ciphertext)}
+        wc.obj = wc.plaintext.get('message')
 
     def norm_recipient_keys(self, keys, make_list=True):
         if '+' in keys:

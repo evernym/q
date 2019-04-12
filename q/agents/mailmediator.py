@@ -29,13 +29,11 @@ class Agent(base.Agent):
         self.trans = transport
 
     def handle_msg(self, wc):
-        # Record when we received this message.
-        wc.in_time = datetime.datetime.utcnow()
         handled = False
         # decrypt wc.msg
         loop = asyncio.get_event_loop()
         wc.msg = loop.run_until_complete(self.securemsg.decryptMsg(wc.msg))
-        wc.obj = json.loads(wc.raw.decode("utf-8"))
+        wc.obj = json.loads(wc.ciphertext.decode("utf-8"))
         # wc.obj = json.loads(wc.msg)
         typ = wc.obj.get('@type')
         if typ:
