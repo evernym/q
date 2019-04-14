@@ -109,7 +109,7 @@ class Semver:
     def __init__(self, value):
         def complain(hint):
             msg = 'Bad semver value (%s). Study semver.org syntax carefully.' % hint
-            raise AssertionError(msg)
+            raise ValueError(msg)
         if not value: complain('empty')
         if isinstance(value, bytes):
             value = value.decode('utf-8')
