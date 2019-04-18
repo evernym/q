@@ -33,7 +33,7 @@ def test_valid_semvers():
         # Using pytest.raises() didn't report which item had failed...
         try:
             s = S(value)
-        except AssertionError:
+        except ValueError:
             print("Should have been valid, but wasn't: " + value)
             ok = False
             continue
@@ -52,7 +52,7 @@ def test_invalid_semvers():
             s = S(value)
             print("Should have been invalid, but wasn't: " + value)
             ok = False
-        except AssertionError:
+        except ValueError:
             pass
         except TypeError:
             pass
@@ -171,6 +171,6 @@ def test_semver_bad_regex_reports_bad_text():
     try:
         s = S('abc')
         ex_text = "No exception raised!"
-    except AssertionError as ex:
+    except ValueError as ex:
         ex_text = str(ex)
     assert 'abc' in ex_text

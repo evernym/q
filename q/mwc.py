@@ -1,6 +1,5 @@
 import datetime
 import json
-import re
 
 from .mtc import *
 from .data_formats import *
@@ -14,11 +13,11 @@ MAX_MESSAGE_SIZE = 1024 * 1024 * 10
 
 def _check_size(data, tc: MessageTrustContext, force = False):
     if force:
-        tc.validate(SIZE_OK, False)
-    if force or (tc.flags & SIZE_OK) == 0:
+        tc.undefine(SIZE_OK)
+    if force or (tc.trust_for(SIZE_OK) is None):
         if data and (len(data) > MAX_MESSAGE_SIZE):
             raise ValueError("Size exceeds %d; message can't be processed." % MAX_MESSAGE_SIZE)
-        tc.flags |= SIZE_OK
+        tc.affirm(SIZE_OK)
 
 
 class MessageWithContext:
@@ -45,14 +44,20 @@ class MessageWithContext:
         self._plaintext = None
         self._obj = None
         _check_size(raw, tc)
+        try_deserialize = True
         if is_likely_json(raw):
             if is_likely_wire_format(raw):
                 self._ciphertext = raw
-                tc.flags |= (CONFIDENTIALITY | INTEGRITY)
+                tc.affirm(CONFIDENTIALITY | INTEGRITY)
                 return
+            else:
+                tc.deny(CONFIDENTIALITY | INTEGRITY | AUTHENTICATED_ORIGIN)
+        else:
+            tc.deny(DESERIALIZE_OK)
+            try_deserialize = False
         # If we get here, we don't have reason to believe the message is encrypted.
         # Therefore, treat it like plaintext.
-        self._set_plaintext_and_obj(raw)
+        self._set_plaintext_and_obj(raw, try_deserialize)
 
     @property
     def sender(self):
@@ -72,18 +77,19 @@ class MessageWithContext:
         _check_size(value, self.tc, force=True)
         self._set_plaintext_and_obj(value)
 
-    def _set_plaintext_and_obj(self, value):
+    def _set_plaintext_and_obj(self, value, try_deserialize=True):
         if isinstance(value, bytes):
             value = value.decode('utf-8')
         self._plaintext = value
         self._obj = None
         if value:
-            self.tc.flags &= ~JSON_OK
-            try:
-                self._obj = json.loads(value)
-                self.tc.flags |= JSON_OK
-            except:
-                pass # Let caller discover problem on their own
+            if try_deserialize:
+                self.tc.undefine(DESERIALIZE_OK)
+                try:
+                    self._obj = json.loads(value)
+                    self.tc.affirm(DESERIALIZE_OK)
+                except:
+                    self.tc.deny(DESERIALIZE_OK) # Let caller discover problem on their own
 
     @property
     def obj(self):
@@ -139,7 +145,7 @@ class MessageWithContext:
         sender = self.sender if self.sender else 'nobody'
         if len(sender) > 8:
             sender = sender[:8] + '...'
-        return '%s from %s with trust=%s' % (msg_fragment, sender, str(self.tc))
+        return '%s from %s with mtc=%s' % (msg_fragment, sender, str(self.tc))
 
     def get_type(self):
         if self.ciphertext:

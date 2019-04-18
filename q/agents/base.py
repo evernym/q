@@ -6,6 +6,8 @@ import os
 import indy
 
 from .. import log_helpers
+from ..mtc import *
+from ..dbc import *
 
 DEFAULT_AGENT_LOG_LEVEL = 'INFO'
 
@@ -74,10 +76,10 @@ class Agent:
     async def unpack(self, wc):
         if 'protected' in wc.ciphertext:
             wc.plaintext = json.loads(await indy.crypto.unpack_message(self.wallet_handle, wc.ciphertext.encode('utf-8')))
-            wc.tc.confidentiality = True
-            wc.tc.integrity = True
+            wc.tc.affirm(CONFIDENTIALITY)
+            wc.tc.affirm(INTEGRITY)
             if wc.get('sender_verkey', None):
-                wc.tc.authenticated_origin = True
+                wc.tc.affirm(AUTHENTICATED_ORIGIN)
         else:
             wc.plaintext = {'message': json.loads(wc.ciphertext)}
         wc.obj = wc.plaintext.get('message')
@@ -108,8 +110,7 @@ class Agent:
         return msg
 
     async def open_wallet(self):
-        if self.wallet_config is None:
-            raise AssertionError('Must call .configure() before open_wallet()')
+        precondition(self.wallet_config is not None, 'Must call .configure() before open_wallet()')
         exists = os.path.isfile(self.wallet_file)
         if exists:
             if 'rw' in self.args:

@@ -1,56 +1,42 @@
-import re
+from .dbc import *
 
-# These constants all need to begin with a different letter, and must be
-# declared at the very top of the module, to make automated stringization
-# work.
+# Declare flags so our IDE will recognize them. We'll set numeric values for them just below.
+SIZE_OK = DESERIALIZE_OK = KEYS_OK = VALUES_OK = CONFIDENTIALITY = INTEGRITY = \
+    AUTHENTICATED_ORIGIN = NONREPUDIATION = PFS = UNIQUENESS = LIMITED_SCOPE = 1
 
-"""Size isn't too big"""
-SIZE_OK = 1
-"""Deserializes as JSON"""
-JSON_OK = 2
-"""Has correct keys/structure for type"""
-KEYS_OK = 4
-"""Field values are correct size and data types"""
-VALUES_OK = 8
-"""Message was sent encrypted"""
-CONFIDENTIALITY = 16
-"""Message was tamper-proof"""
-INTEGRITY = 32
-"""Message was sent by someone other than anonymous"""
-AUTHENTICATED_ORIGIN = 64
-"""Message origin can be proved to third party"""
-NONREPUDIATION = 128
-
-# Now derive other constants out of these
+# Now set numeric values and derive other constants from these.
 def _derive_constants(g):
-    max_flag = 0
-    x = {}
-    for key in g:
-        if key.startswith('_'):
-            continue
-        n = g[key]
-        if not isinstance(n, int):
-            continue
-        if n > max_flag:
-            max_flag = n
-        i = 1
-        while n > 1:
-            n /= 2
-            i += 1
-        x[i] = key
-    labels = []
-    initials = []
-    i = 1
     n = 1
-    while n <= max_flag:
-        label = x[i].replace('_OK', '').lower()
-        labels.append(label)
-        initials.append(label[0])
-        n *= 2
-        i += 1
-    return labels, initials, max_flag
+    labels = []
+    for key in g:
+        if not key.startswith('_'):
+            i = g[key]
+            if isinstance(i, int):
+                g[key] = n
+                n *= 2
+                label = key.replace('_OK', '').lower()
+                labels.append(label)
+    postcondition(n > 256, "should have defined a bunch of constants")
+    # Figure out the shortest abbrev for each label.
+    abbrevs = []
+    for i in range(len(labels)):
+        label = labels[i]
+        for j in range(1, len(label)):
+            prefix = label[:j]
+            collides = False
+            for k in range(len(labels)):
+                if k != i:
+                    other = labels[k]
+                    if other.startswith(prefix):
+                        collides = True
+                        break
+            if not collides:
+                abbrevs.append(prefix)
+                break
+    postcondition(len(abbrevs) == len(labels), "should have found a unique abbrev for every label")
+    return labels, abbrevs, n / 2
 
-FLAG_LABELS, FLAG_INITIALS, _MAX_FLAG = _derive_constants(globals())
+LABELS, ABBREVS, _MAX_FLAG = _derive_constants(globals())
 del _derive_constants
 
 
@@ -59,70 +45,100 @@ class MessageTrustContext:
     Describe the trust guarantees associated with a given message.
     See http://bit.ly/2UutabT for more information.
     """
-    def __init__(self, flags: int = 0):
-        self.flags = flags
+    def __init__(self, affirmed: int = 0, denied: int = 0):
+        precondition(affirmed & denied == 0, "what's affirmed and denied can't overlap")
+        self._affirmed = affirmed
+        self._denied = denied
 
-    @classmethod
-    def from_initials(cls, initials):
-        n = 0
-        if initials:
-            for c in initials:
-                try:
-                    i = FLAG_INITIALS.index(c.lower())
-                    n |= 2**i
-                except ValueError:
-                    pass
-        return MessageTrustContext(n)
+    def affirm(self, flags):
+        self._affirmed |= flags
+        self._denied &= ~flags
 
-    @classmethod
-    def from_labels(cls, labels):
-        n = 0
-        if labels:
-            if isinstance(labels, str):
-                labels = labels.split(',')
-            labels = [x.strip() for x in labels]
-            labels = [x.lower() for x in labels if x]
-            for c in labels:
-                try:
-                    i = FLAG_LABELS.index(c)
-                    n |= 2**i
-                except ValueError:
-                    pass
-        return MessageTrustContext(n)
+    def deny(self, flags):
+        self._denied |= flags
+        self._affirmed &= ~flags
+
+    def undefine(self, flags):
+        self._affirmed &= ~flags
+        self._denied &= ~flags
+
+    def trust_for(self, flag):
+        """
+        Tells what trust applies for the given flag -- True if trusted, False if explicitly
+        not trusted, or None if trust for that flag has not been evaluated.
+        """
+        if (self._affirmed & flag) == flag: return True
+        if (self._denied & flag) == flag: return False
+        return None
 
     @property
-    def initials(self):
-        """
-        Return a string that summarizes which flags are set.
-        """
-        if self.flags == 0:
-            return "0"
+    def affirmed(self):
+        return self._affirmed
+
+    @property
+    def denied(self):
+        return self._denied
+
+    @classmethod
+    def get_flag_for_label(cls, label):
+        n = 1
+        for ab in ABBREVS:
+            if label.startswith(ab):
+                return n
+            n *= 2
+        return 0
+
+    @classmethod
+    def from_text(cls, txt):
+        mtc = MessageTrustContext()
+        if txt:
+            if txt != '?':
+                # Scenarios: A) start with something like +a+i-n-p; B) start with -n-p+a+i
+                pluses = txt.replace(' ', '').lower().split('+')
+                # Now we'll have: A) ['','a','i-n-p']; B) ['-n-p','a','i']
+                for plus in pluses:
+                    if not plus: continue
+                    minuses = plus.split('-')
+                    if minuses[0]:
+                        # This is really a plus followed by minuses
+                        mtc.affirm(MessageTrustContext.get_flag_for_label(minuses[0]))
+                    for minus in minuses[1:]:
+                        if minus:
+                            mtc.deny(MessageTrustContext.get_flag_for_label(minus))
+        return mtc
+
+    @classmethod
+    def _get_text(cls, flags, labels, mark, spacer):
         x = ''
         i = 0
         n = 1
         while n < _MAX_FLAG:
-            if (self.flags & n) == n:
-                x += FLAG_INITIALS[i]
+            if (flags & n) == n:
+                x = x + spacer + mark + labels[i]
             n *= 2
             i += 1
-        return x
+        return x.lstrip()
+
+    @property
+    def abbrevs(self):
+        """
+        Return an abbreviated string that summarizes which flags are set and explicitly unset.
+        """
+        pluses = MessageTrustContext._get_text(self._affirmed, ABBREVS, '+', '')
+        minuses = MessageTrustContext._get_text(self._denied, ABBREVS, '-', '')
+        return '?' if (not pluses and not minuses) else pluses + minuses
 
     @property
     def labels(self):
         """
-        Return a string that summarizes which flags are set.
+        Return a long-form string that describes which flags are set and explicitly unset.
         """
-        if self.flags == 0:
-            return "0"
-        x = []
-        i = 0
-        n = 1
-        while n < _MAX_FLAG:
-            if (self.flags & n) == n:
-                x.append(FLAG_LABELS[i])
-            n *= 2
-            i += 1
-        return ', '.join(x)
+        pluses = MessageTrustContext._get_text(self._affirmed, LABELS, '+', ' ')
+        minuses = MessageTrustContext._get_text(self._denied, LABELS, '-', ' ')
+        if pluses and minuses: return pluses + ' ' + minuses
+        if pluses: return pluses
+        if minuses: return minuses
+        return '?'
 
     def __str__(self):
-        return self.initials
+        return self.abbrevs

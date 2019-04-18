@@ -86,26 +86,26 @@ def test_bytes_to_mwc_jwt_attached(urec):
     raw = _get_sample_email_tweaked('dw_attached', 'tiny.dw', 'tiny.jwt')
     wc = urec.bytes_to_mwc(raw)
     assert bool(wc.ciphertext)
-    assert wc.tc.flags & (CONFIDENTIALITY | INTEGRITY) != 0
+    assert wc.tc.trust_for(CONFIDENTIALITY | INTEGRITY) == True
 
 
 def test_bytes_to_mwc_dw_attached():
     wc = _get_mwc_from_sample_email('dw_attached')
     assert bool(wc.ciphertext)
-    assert wc.tc.flags & (CONFIDENTIALITY | INTEGRITY) != 0
+    assert wc.tc.trust_for(CONFIDENTIALITY | INTEGRITY) == True
 
 
 def test_bytes_to_mwc_dp_attached():
     wc = _get_mwc_from_sample_email('dp_attached')
     assert bool(wc.plaintext)
-    assert wc.tc.flags & (CONFIDENTIALITY | INTEGRITY) == 0
+    assert wc.tc.trust_for(CONFIDENTIALITY | INTEGRITY) == False
 
 
 def test_bytes_to_mwc_json_attached(urec):
     raw = _get_sample_email_tweaked('dp_attached', 'sample.dp', 'sample.json')
     wc = urec.bytes_to_mwc(raw)
     assert bool(wc.plaintext)
-    assert wc.tc.flags & (CONFIDENTIALITY | INTEGRITY) == 0
+    assert wc.tc.trust_for(CONFIDENTIALITY | INTEGRITY) == False
 
 @pytest.fixture
 def inmemrec():
