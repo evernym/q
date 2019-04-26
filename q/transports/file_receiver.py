@@ -1,62 +1,45 @@
-import aiofiles
-from asyncio.coroutines import os
-import re
+import os
+import sys
 
-from .file_direction import Direction
-from .. import mwc
-from .. import log_helpers
+from . import filesys_match
 
-PAT = re.compile('.*')
-EXAMPLE = '~/myfolder'
-_MSG_EXT = '.in'
+EXAMPLES = 'stdin|~/myfile.dat'
 
 
-def _next_item_name(folder, ext, filter=None):
-    for root, folders, files in os.walk(folder):
-        folders.clear()
-        for fname in files:
-            # Ignore files that are not messages.
-            if fname.endswith(ext):
-                if (filter is None) or (fname.startswith(filter)):
-                    yield fname
+def match(uri):
+    return filesys_match.match_uri_to_filesys(uri, os.path.isfile, 'stdin')
 
 
-async def _pop_item(fpath):
-    async with aiofiles.open(fpath, 'rb') as f:
-        data = await f.read()
-    os.remove(fpath)
-    return data
-
-
-async def _item_content(folder, ext, filter=None):
-    """Return next as mwc.MessageWithContext, or None if nothing is found."""
-    try:
-        data = None
-        for fname in _next_item_name(folder, ext, filter):
-            data = await _pop_item(os.path.join(folder, fname))
-            return mwc.MessageWithContext(data)
-    except KeyboardInterrupt:
-        raise
-    except:
-        log_helpers.log_exception()
-
-
-class Receiver(Direction):
-    def __init__(self, folder, is_destward):
-        Direction.__init__(self, is_destward)
-        self._folder = os.path.normpath(folder)
+class Receiver:
+    def __init__(self, fname):
+        self._fname = fname
+        self._handle = None
 
     @property
-    def endpoint(self):
-        return self._folder
+    def fname(self):
+        return self._fname
 
     @property
-    def folder(self):
-        return self._folder
+    def handle(self):
+        if self._handle is None:
+            if self._fname == 'stdin':
+                self._handle = sys.stdin
+            else:
+                self._handle = open(self._fname, 'rt')
+        return self._handle
 
-    async def peek(self, filter=None):
-        for x in _next_item_name(self._folder, self.read_ext, filter):
-            return True
+    def __del__(self):
+        if self._handle:
+            self._handle.close()
 
-    async def receive(self, filter=None):
-        return await _item_content(self._folder, self.read_ext, filter)
+    def __enter__(self):
+        _ = self.handle # force file to be opened
+        return self
+
+    def __exit__(self, *args):
+        if self._handle:
+            self._handle.close()
+            self._handle = None
+
+    async def receive(self):
+        return self.handle.read()

@@ -1,30 +1,34 @@
-import aiofiles
 import os
-import re
-import uuid
+import sys
 
-from .file_direction import Direction
+from . import filesys_match
 
-PAT = re.compile('.*')
-EXAMPLE = '~/myfolder'
+EXAMPLES = 'stdout|~/myfile.dat'
 
 
-class Sender(Direction):
-    def __init__(self, is_destward):
-        Direction.__init__(self, is_destward)
+def match(uri):
+    return filesys_match.match_uri_to_filesys(uri, os.path.isfile, 'stdout')
 
-    async def send(self, payload, folder, id=None, *args):
-        if isinstance(payload, str):
-            payload = payload.encode('utf-8')
-        if id is None:
-            id = str(uuid.uuid4())
-        # Because writing is not an atomic operation, create the file with
-        # a temp name, then rename it once the file has been written and
-        # closed. This prevents code from peeking/reading the file before
-        # we are done writing it.
-        temp_fname = os.path.join(folder, '.' + id + '.tmp')
-        perm_fname = os.path.join(folder, id + self.write_ext)
-        async with aiofiles.open(temp_fname, 'wb') as f:
-            await f.write(payload)
-        os.rename(temp_fname, perm_fname)
-        return id
+
+class Sender:
+
+    def __init__(self, fname=None):
+        # If given a filename, make sure file exists.
+        if fname:
+            with open(fname, 'at') as f:
+                pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        pass
+
+    async def send(self, payload, fname, *ignored):
+        if fname == 'stdout':
+            sys.stdout.write(fname)
+            sys.stdout.flush()
+        else:
+            with open(fname, 'at') as f:
+                f.write(payload)
+                f.flush()

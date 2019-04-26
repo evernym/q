@@ -1,4 +1,4 @@
-# A mixin used by the file I/O channel classes
+# A mixin used by the folder transport classes
 class Direction:
     def __init__(self, is_destward):
         self.is_destward = is_destward

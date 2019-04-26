@@ -9,7 +9,7 @@ from aiohttp import web
 from unittest.mock import patch, call
 
 from .. import polyrelay
-from ...transports import file_transport
+from ...transports import folder_channel
 from ...transports import smtp_sender # must be imported despite lack of usage, because mock finds it by name
 
 
@@ -66,11 +66,7 @@ async def web_server_port():
 async def run_relay_from_file(scratch_space, dests):
     src = scratch_space.name
     main = asyncio.create_task(polyrelay.main([src] + dests, Interrupter()))
-    # If the relay is working properly, it will have created a src FileTransport
-    # with folder_is_destward=False. This means it will expect to *read* messages
-    # from its /a subdir. To write something there easily, create a new FileTransport
-    # that has folder_is_destward=True. It will *write* to the /a subdir.
-    fsrc = file_transport.FileTransport(src)
+    fsrc = folder_channel.Channel(src)
     await fsrc.send("hello")
     # Now wait for the relay to process the message, get interrupted, and exit
     # its main loop.
@@ -87,12 +83,12 @@ async def relay_to_and_from_files(scratch_space, dest_count):
     try:
         await run_relay_from_file(scratch_space, dests)
         # Now we want to check whether the message has been written to each dest.
-        # The dest FileTransport will have been created with folder_is_destward
-        # =True. This means it will have written its message to the /a subdir.
-        # We want to read from /a, so we'll now create a FileTransport with the
+        # The dest Channel will have been created with is_destward
+        # =True. This means it will have written its message to *.in.
+        # We want to read from /a, so we'll now create a Channel with the
         # opposite setting. It will *read* from dest's /a.
         for dest in dests:
-            fdest = file_transport.FileTransport(dest, folder_is_destward=False)
+            fdest = folder_channel.Channel(dest, is_destward=False)
             x = await fdest.receive()
             assert x is not None
             assert x.plaintext == "hello"
@@ -147,11 +143,11 @@ async def test_from_http(scratch_space):
     # its main loop.
     await main
     # If the relay worked properly, it will have received the http post, and will
-    # have created a dest FileTransport with folder_is_destward=True. This means
+    # have created a dest Channel with is_destward=True. This means
     # it wrote messages to its /a subdir. To read something there easily,
-    # we create a new FileTransport that has folder_is_destward=False. It will
+    # we create a new Channel that has is_destward=False. It will
     # *read* from the /a subdir.
-    f = file_transport.FileTransport(scratch_space.name, folder_is_destward=False)
+    f = folder_channel.Channel(scratch_space.name, is_destward=False)
     x = await f.receive()
     assert x.plaintext == 'hello'
 

@@ -109,6 +109,7 @@ class Receiver:
         if queue is None:
             queue = MailQueue()
         self.queue = queue
+        self.endpoint = self.user
 
     def bytes_to_mwc(self, msg_bytes) -> mwc.MessageWithContext:
         """

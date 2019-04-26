@@ -43,13 +43,17 @@ class MessageWithContext:
         self._ciphertext = None
         self._plaintext = None
         self._obj = None
+        self.id = None
+        self.thid = None
+        self.type = None
+        self.interaction = None
+        self.state_machine = None
         _check_size(raw, tc)
         try_deserialize = True
         if is_likely_json(raw):
             if is_likely_wire_format(raw):
                 self._ciphertext = raw
-                tc.affirm(CONFIDENTIALITY | INTEGRITY)
-                return
+                # We can't affirm anything about the ciphertext until we try to decrypt
             else:
                 tc.deny(CONFIDENTIALITY | INTEGRITY | AUTHENTICATED_ORIGIN)
         else:
@@ -81,13 +85,17 @@ class MessageWithContext:
         if isinstance(value, bytes):
             value = value.decode('utf-8')
         self._plaintext = value
-        self._obj = None
+        self._obj = self.type = self.id = self.thid = None
         if value:
             if try_deserialize:
                 self.tc.undefine(DESERIALIZE_OK)
                 try:
-                    self._obj = json.loads(value)
+                    obj = json.loads(value)
+                    self._obj = obj
                     self.tc.affirm(DESERIALIZE_OK)
+                    self.type = obj.get('@type')
+                    self.id = obj.get('@id')
+                    self.thid = obj.get('~thread', {}).get('thid')
                 except:
                     self.tc.deny(DESERIALIZE_OK) # Let caller discover problem on their own
 
@@ -96,7 +104,7 @@ class MessageWithContext:
         return self._obj
 
     def __bool__(self):
-        return bool(self._ciphertext) or bool(self._plaintext)
+        return bool(self._ciphertext) or bool(self._plaintext) or bool(self._obj)
 
     def __str__(self):
         """

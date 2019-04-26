@@ -5,6 +5,7 @@ from .semver import Semver
 
 HandlerInfo = collections.namedtuple('HandlerInfo', ['module', 'doc_uri', 'protocol_name', 'semver', 'messages', 'roles'])
 SplitMsgTypeUri = collections.namedtuple('SplitMsgTypeUri', ['doc_uri', 'protocol_name', 'semver', 'msg_type_name'])
+SplitMsgTypeUri.__str__ = lambda self: self.doc_uri + self.protocol_name + '/' + str(self.semver) + '/' + self.msg_type_name
 SplitProtocolIdentifierUri = collections.namedtuple('SplitProtocolIdentifierUri', ['doc_uri', 'protocol_name', 'semver'])
 HandlerCandidate = collections.namedtuple('HandlerCandidate', ['handler', 'compatible'])
 

@@ -1,17 +1,21 @@
 import aiohttp
 import re
 
-PAT = re.compile('https?://.+$')
 EXAMPLE = 'https://x.com/abc'
+_PAT = re.compile('https?://.+$')
+
+
+def match(uri):
+    return bool(_PAT.match(uri))
 
 
 class Sender:
-    def __init__(self, endpoint):
-        self.endpoint = endpoint
+    def __init__(self):
+        pass
 
-    async def send(self, payload, *args):
+    async def send(self, payload, endpoint, *args):
         async with aiohttp.ClientSession() as session:
-            async with session.post(self.endpoint, data=payload, headers={
+            async with session.post(endpoint, data=payload, headers={
                     'content-type': 'application/ssi-agent-wire'}) as resp:
                 await resp.text()
                 if resp.status >= 400:

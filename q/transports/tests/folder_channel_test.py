@@ -3,7 +3,7 @@ import pytest
 import tempfile
 import aiofiles
 
-from ..file_channel import Channel
+from ..folder_channel import Channel
 
 
 @pytest.fixture()

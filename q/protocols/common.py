@@ -43,12 +43,9 @@ def get_thread_id_from_text(txt):
 def get_thread_id(wc):
     # Normally, we will have parsed JSON. However, if a message is malformed
     # but we still want its ID, fallback to regex parsing to get it.
-    if wc.obj:
-        thid = wc.obj.get('~thread',{}).get('thid')
-        if not thid:
-            thid = wc.obj.get('@id')
-        return thid
-    return get_thread_id_from_text(wc.ciphertext)
+    if wc.thid: return wc.thid
+    if wc.id: return wc.id
+    return get_thread_id_from_text(wc.plaintext) if wc.plaintext else None
 
 
 def problem_report(wc, explain, code: str = None, catalog: str = None):

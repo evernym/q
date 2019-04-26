@@ -6,43 +6,51 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 
-PAT = re.compile('^smtp://([A-Za-z0-9][^@:]*):([^@]*)@([^:/]+)(?::([0-9]{1,5}))?[?](.{14,})$')
-FROM_PAT = re.compile('from=((?:[A-Za-z0-9][^=&@]*)@(?:[^.=&]+)[.](?:[^.=&]+[^=&]*))')
-TO_PAT = re.compile('to=((?:[A-Za-z0-9][^=&@]*)@(?:[^.=&]+)[.](?:[^.=&]+[^=&]*))')
+EXAMPLES = 'mailto:alice@example.com?via=user:pass@mail.my.org:2345'
+_PAT = re.compile(r'mailto:([^@]+@[^@?]+)[?](.*?)via=([^:]+):([^@]*)@([^:]+)(?::([1-9][0-9]{3,4}))(.*)')
+_VIA_PAT = re.compile(r'[?&]via=([^:]+):([^@]*)@([^:]+)(?::([1-9][0-9]{3,4}))')
 
-EXAMPLE = 'smtp://user:pass@mail.my.org:234?from=sender@x.com&to=recipient@y.com'
+
+def match(uri):
+    return bool(_PAT.match(uri))
+
+
+def purify_target(url):
+    """
+    Convert a url for this sender into just the portion needed to identify the target
+    (removing info about the username, password, and smtp server).
+    """
+    m = _VIA_PAT.search(url)
+    if m:
+        return url[:m.span()[0]] + url[m.span()[1]:]
 
 
 class Sender:
 
-    def __init__(self, endpoint):
-        m = PAT.match(endpoint)
+    def __init__(self, smtp_server_uri):
+        m = _PAT.match(smtp_server_uri)
         if not m:
             raise ValueError('Expected an SMTP endpoint that matches regex: %s' % PAT.pattern)
-        self.user = m.group(1)
-        self.password = m.group(2)
-        self.server = m.group(3)
-        self.port = m.group(4)
+        self.user = m.group(3)
+        self.password = m.group(4)
+        self.server = m.group(5)
+        self.port = m.group(6)
         self.port = int(self.port) if self.port else 587
-        query = m.group(5)
-        m = FROM_PAT.search(query)
-        if m:
-            self.sender = m.group(1)
-        else:
-            raise ValueError('Expected "from=<addr>" in query string.')
-        m = TO_PAT.search(query)
-        if m:
-            self.to = m.group(1)
-        else:
-            raise ValueError('Expected "to=<addr>" in query string.')
+        headers = (m.group(2) + m.group(7)).split('&')
+        headers = [x.split('=') for x in headers]
+        self.headers = headers
 
-    async def send(self, payload):
+    async def send(self, payload, email_addr):
         def do_send():
             m = MIMEMultipart()
-            m['From'] = 'smtp_sender'
-            m['To'] = self.to
-            subj = 'DIDComm message'
-            m['Subject'] = subj
+            # Put default values in email headers.
+            m['From'] = 'smtp_sender@q'
+            m['Subject'] = 'DIDComm message'
+            # Now override headers with anything from the mailto URL.
+            for header in self.headers:
+                if len(header) == 2:
+                    m[header[0]] = header[1]
+            m['To'] = email_addr
             m.attach(MIMEText('See attached file.', 'plain'))
             p = MIMEBase('application', 'octet-stream')
             p.set_payload(payload)
@@ -52,7 +60,7 @@ class Sender:
             s = smtplib.SMTP(self.server, self.port)
             s.starttls()
             s.login(self.user, self.password)
-            s.sendmail(self.sender, self.to, m.as_string())
+            s.sendmail(m['From'], email_addr, m.as_string())
             s.quit()
 
         loop = asyncio.get_event_loop()

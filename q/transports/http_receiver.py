@@ -6,15 +6,21 @@ import logging
 
 from .. import mwc
 
-PAT = re.compile('^http(s)?://([^:/]+)(?::([0-9]{1,5}))?(?:/(.*))?$')
-EXAMPLE = 'http://localhost:8080'
+_PAT = re.compile('^http(s)?://([^:/]+)(?::([0-9]{1,5}))?(?:/(.*))?$')
+EXAMPLES = 'http://localhost:8080'
+
+
+def match(uri):
+    return bool(_PAT.match(uri))
+
 
 def _resp(code, msg):
     return web.Response(text='%d %s' % (code, msg), headers={"Content-Type": "text/plain"})
 
+
 class Receiver:
     def __init__(self, uri):
-        m = PAT.match(uri)
+        m = _PAT.match(uri)
         if m.group(1) == 's':
             raise ValueError("Can't listen over TLS (no certs available).")
         if m.group(2) not in ['localhost', '127.0.0.1']:
@@ -25,6 +31,7 @@ class Receiver:
         self.queue = []
         self.queue_lock = threading.Lock()
         self.web_server = None
+        self.endpoint = uri
 
     async def accept(self, request):
         try:

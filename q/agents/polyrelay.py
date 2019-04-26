@@ -2,18 +2,19 @@
 A pluggable relay that lets you translate any agent transport into
 any different transport, for arbitrary testing scenarios.
 """
-if __name__ == '__main__':
-    import sys
-    print("You can't run a script from inside a python package without -m switch.\n" +
-        "See https://www.python.org/dev/peps/pep-0366/. Run bin/<this script name> instead.")
-    sys.exit(1)
-
-
 import argparse
 import logging
 import asyncio
 
 from .. import transports
+
+
+class BoundSender:
+    def __init__(self, sender, target):
+        self.sender = sender
+        self.target = target
+    async def send(self, payload):
+        return await self.sender.send(payload, self.target)
 
 
 async def relay(src, dests):
@@ -60,3 +61,9 @@ async def main(argv, interrupter=None):
                 await stopper()
     except KeyboardInterrupt:
         print('')
+
+if __name__ == '__main__':
+    import sys
+    print("You can't run a script from inside a python package without -m switch.\n" +
+        "See https://www.python.org/dev/peps/pep-0366/. Run bin/<this script name> instead.")
+    sys.exit(1)

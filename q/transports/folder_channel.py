@@ -1,13 +1,13 @@
 from asyncio.coroutines import os
 
-from .file_sender import Sender
-from .file_receiver import Receiver
-from .file_direction import Direction
+from .folder_sender import Sender
+from .folder_receiver import Receiver
+from .folder_direction import Direction
 
 
 class Channel(Direction):
     """
-    Provide a duplex channel that works by manipulating files in the file system.
+    Provide a duplex channel that works by manipulating files in a folder.
     """
 
     def __init__(self, folder: str, is_destward: bool = True):
