@@ -111,7 +111,7 @@ async def test_tee(scratch_space):
 async def test_to_email_with_mock(scratch_space):
     with patch(__name__ + '.smtp_sender.smtplib.SMTP', autospec=True) as p:
         await run_relay_from_file(scratch_space,
-            ['smtp://user:pass@mail.my.org:234?from=sender@x.com&to=recipient@y.com'])
+            ['mailto:recipient@y.com?via=user:pass@mail.my.org:234&from=sender@x.com'])
         # Guarantee that we exited normally and that we did in fact call
         # the SMTP object's quit() method.
         p.assert_has_calls([call().quit()])

@@ -1,7 +1,7 @@
 import aiohttp
 import re
 
-EXAMPLE = 'https://user:pass@x.com/abc'
+EXAMPLES = 'https://user:pass@x.com/abc'
 _PAT = re.compile('https?://.+$')
 _BASIC_AUTH_PAT = re.compile('https?://(?:([^/:]+):([^/@]*)@)?.+$')
 
@@ -27,7 +27,7 @@ class Sender:
         else:
             auth = None
         async with aiohttp.ClientSession(auth=auth) as session:
-            async with session.post(uri, data=payload, headers={
+            async with session.post(rest, data=payload, headers={
                     'content-type': 'application/ssi-agent-wire'}) as resp:
                 await resp.text()
                 if resp.status >= 400:

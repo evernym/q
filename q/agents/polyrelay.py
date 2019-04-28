@@ -9,14 +9,6 @@ import asyncio
 from .. import transports
 
 
-class BoundSender:
-    def __init__(self, sender, target):
-        self.sender = sender
-        self.target = target
-    async def send(self, payload):
-        return await self.sender.send(payload, self.target)
-
-
 async def relay(src, dests):
     mwc = await src.receive()
     if mwc is not None:
@@ -24,8 +16,10 @@ async def relay(src, dests):
         if not data:
             data = mwc.plaintext
         if data:
-            for dest in dests:
-                await dest.send(data)
+            for pair in dests:
+                uri = pair[0]
+                obj = pair[1]
+                await obj.send(data, uri)
         else:
             logging.info('No useful data from message.')
         return mwc
@@ -45,7 +39,7 @@ async def main(argv, interrupter=None):
         args = parser.parse_args(argv)
         src = transports.load(args.src, transports.RECEIVERS)
         try:
-            dests = [transports.load(x, transports.SENDERS) for x in args.dest]
+            dests = [(x, transports.load(x, transports.SENDERS)) for x in args.dest]
             logging.debug('Relaying from %s to %s' % (args.src, args.dest))
             while True:
                 msg = await relay(src, dests)

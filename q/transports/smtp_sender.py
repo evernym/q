@@ -6,8 +6,8 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 
-EXAMPLES = 'mailto:alice@example.com?via=user:pass@mail.my.org:2345'
-_PAT = re.compile(r'mailto:([^@]+@[^?]+)[?](.*?)via=([^:]+):([^@]*)@([^:]+)(?::([1-9][0-9]{3,4}))(.*)')
+EXAMPLES = 'mailto:alice@example.com?via=user:pass@mail.my.org:587'
+_PAT = re.compile(r'mailto:([^@]+@[^?]+)[?](.*?)via=([^:]+):([^@]*)@([^:]+)(?::([1-9][0-9]{0,4}))?(.*)')
 
 
 def match(uri):

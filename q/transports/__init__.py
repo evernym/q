@@ -44,7 +44,7 @@ def _seems_like_fspath(uri):
 def load(uri, items):
     for item in items:
         if item.match(uri):
-            return item.cls(uri)
+            return item.cls(uri) if items is RECEIVERS else item.cls()
     msg = f"Can't find a transport that matches {uri}."
     if _seems_like_fspath(uri):
         msg += " Did you reference a file or folder that doesn't exist?"
