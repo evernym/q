@@ -12,11 +12,11 @@ def match(uri):
 
 class Sender:
 
-    def __init__(self, fname=None):
-        # If given a filename, make sure file exists.
-        if fname:
-            with open(fname, 'at') as f:
-                pass
+    def __init__(self, uri):
+        # uri is passed to each Sender so it can extract authentication details or
+        # similar. In our case, we don't need it, because we will create the
+        # file if it doesn't exist.
+        pass
 
     def __enter__(self):
         return self
@@ -25,10 +25,12 @@ class Sender:
         pass
 
     async def send(self, payload, fname, *ignored):
-        if fname == 'stdout':
+        if isinstance(payload, str):
+            payload = payload.encode('utf-8')
+        if fname.lower() == 'stdout':
             sys.stdout.write(fname)
             sys.stdout.flush()
         else:
-            with open(fname, 'at') as f:
+            with open(fname, 'ab') as f:
                 f.write(payload)
                 f.flush()

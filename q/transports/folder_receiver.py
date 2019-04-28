@@ -1,11 +1,11 @@
 import aiofiles
 from asyncio.coroutines import os
-import re
 
 from .folder_direction import Direction
 from . import filesys_match
 from .. import mwc
 from .. import log_helpers
+from ..dbc import precondition
 
 EXAMPLES = '~/myfolder'
 _MSG_EXT = '.in'
@@ -45,8 +45,10 @@ async def _item_content(folder, ext, filter=None):
 
 
 class Receiver(Direction):
-    def __init__(self, folder, is_destward=False):
+    def __init__(self, uri, is_destward=False):
         Direction.__init__(self, is_destward)
+        folder = os.path.expanduser(uri)
+        precondition(os.path.isdir(folder), "Folder %s must exist." % uri)
         self._folder = os.path.normpath(folder)
 
     @property

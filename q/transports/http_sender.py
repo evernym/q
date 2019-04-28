@@ -1,8 +1,9 @@
 import aiohttp
 import re
 
-EXAMPLE = 'https://x.com/abc'
+EXAMPLE = 'https://user:pass@x.com/abc'
 _PAT = re.compile('https?://.+$')
+_BASIC_AUTH_PAT = re.compile('https?://(?:([^/:]+):([^/@]*)@)?.+$')
 
 
 def match(uri):
@@ -10,7 +11,13 @@ def match(uri):
 
 
 class Sender:
-    def __init__(self):
+    def __init__(self, uri):
+        # uri is passed to each Sender so it can extract authentication details or
+        # similar.
+        m = _BASIC_AUTH_PAT.match(uri)
+        if m:
+            self.user = m.group(1)
+            self.password = m.group(2)
         pass
 
     async def send(self, payload, endpoint, *args):

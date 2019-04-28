@@ -41,7 +41,7 @@ class Channel(Direction):
         if not os.path.isdir(folder):
             raise ValueError('Folder "%s" does not exist.' % folder)
         self.receiver = Receiver(folder, is_destward)
-        self.sender = Sender(is_destward)
+        self.sender = Sender(folder, is_destward)
 
     @property
     def folder(self):

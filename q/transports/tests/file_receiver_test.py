@@ -19,8 +19,8 @@ async def test_file_receiver(scratch_space):
             assert not bool(await fr.receive())
             f.write('hello')
             f.flush()
-            assert (await fr.receive()) == 'hello'
+            assert (await fr.receive()) == b'hello'
             assert not bool(await fr.receive())
             f.write('world')
             f.flush()
-            assert (await fr.receive()) == 'world'
+            assert (await fr.receive()) == b'world'

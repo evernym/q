@@ -27,10 +27,10 @@ def purify_target(url):
 
 class Sender:
 
-    def __init__(self, smtp_server_uri):
-        m = _PAT.match(smtp_server_uri)
+    def __init__(self, uri):
+        m = _PAT.match(uri)
         if not m:
-            raise ValueError('Expected an SMTP endpoint that matches regex: %s' % PAT.pattern)
+            raise ValueError('Expected an SMTP endpoint that matches regex: %s' % _PAT.pattern)
         self.user = m.group(3)
         self.password = m.group(4)
         self.server = m.group(5)

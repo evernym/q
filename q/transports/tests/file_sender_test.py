@@ -14,6 +14,10 @@ def scratch_space():
 async def test_file_sender(scratch_space):
 
     fname = os.path.join(scratch_space.name, 'x')
+    # Make sure file exists, so we can open it for read
+    # a couple lines below.
+    with open(fname, 'wb') as f:
+        pass
     with file_sender.Sender(fname) as fs:
         with open(fname, 'rt') as f:
             assert not bool(f.read())

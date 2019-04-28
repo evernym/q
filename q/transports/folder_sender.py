@@ -4,6 +4,7 @@ import uuid
 
 from .folder_direction import Direction
 from . import filesys_match
+from ..dbc import precondition
 
 EXAMPLES = '~/myfolder'
 
@@ -13,7 +14,11 @@ def match(uri):
 
 
 class Sender(Direction):
-    def __init__(self, is_destward: bool = True):
+    def __init__(self, uri, is_destward: bool = True):
+        # uri is passed to each Sender so it can extract authentication details or
+        # similar. All we're going to do is make sure it's a folder that exists.
+        folder = os.path.expanduser(uri)
+        precondition(os.path.isdir(folder), "Folder %s must exist." % folder)
         Direction.__init__(self, is_destward)
 
     async def send(self, payload, folder, id=None, *args):
