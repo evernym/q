@@ -10,19 +10,24 @@ def match(uri):
     return bool(_PAT.match(uri))
 
 
-class Sender:
-    def __init__(self, uri):
-        # uri is passed to each Sender so it can extract authentication details or
-        # similar.
-        m = _BASIC_AUTH_PAT.match(uri)
-        if m:
-            self.user = m.group(1)
-            self.password = m.group(2)
-        pass
+def strip_basic_auth_from_uri(uri):
+    # uri is passed to each Sender so it can extract authentication details or
+    # similar.
+    m = _BASIC_AUTH_PAT.match(uri)
+    if m:
+        return m.group(1), m.group(2), uri[:m.start(1)] + uri[m.end(2):]
+    return None, None, uri
 
-    async def send(self, payload, endpoint, *args):
-        async with aiohttp.ClientSession() as session:
-            async with session.post(endpoint, data=payload, headers={
+
+class Sender:
+    async def send(self, payload, uri, *args):
+        user, password, rest = strip_basic_auth_from_uri(uri)
+        if user or password:
+            auth = aiohttp.BasicAuth(login=user, password=password)
+        else:
+            auth = None
+        async with aiohttp.ClientSession(auth=auth) as session:
+            async with session.post(uri, data=payload, headers={
                     'content-type': 'application/ssi-agent-wire'}) as resp:
                 await resp.text()
                 if resp.status >= 400:

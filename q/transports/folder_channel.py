@@ -30,18 +30,16 @@ class Channel(Direction):
           written, and when a receive() method is called, *.in files
           are read:
           
-               FileTransport is destward of the relay (write *.in; read *.out)
+               Channel is destward of the relay (write *.in; read *.out)
                     |
-          http -> relay -> FileTransport -> agent
+          http -> relay -> FolderChannel -> agent
                                               |
-               FileTransport is srcward of the agent (read from *.in; write to *.out)
+               Channel is srcward of the agent (read from *.in; write to *.out)
         """
         Direction.__init__(self, is_destward)
         folder = os.path.normpath(os.path.abspath(folder))
-        if not os.path.isdir(folder):
-            raise ValueError('Folder "%s" does not exist.' % folder)
         self.receiver = Receiver(folder, is_destward)
-        self.sender = Sender(folder, is_destward)
+        self.sender = Sender(is_destward)
 
     @property
     def folder(self):

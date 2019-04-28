@@ -18,7 +18,7 @@ async def test_file_sender(scratch_space):
     # a couple lines below.
     with open(fname, 'wb') as f:
         pass
-    with file_sender.Sender(fname) as fs:
+    with file_sender.Sender() as fs:
         with open(fname, 'rt') as f:
             assert not bool(f.read())
             await fs.send('hello', fname)

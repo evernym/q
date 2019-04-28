@@ -12,12 +12,6 @@ def match(uri):
 
 class Sender:
 
-    def __init__(self, uri):
-        # uri is passed to each Sender so it can extract authentication details or
-        # similar. In our case, we don't need it, because we will create the
-        # file if it doesn't exist.
-        pass
-
     def __enter__(self):
         return self
 

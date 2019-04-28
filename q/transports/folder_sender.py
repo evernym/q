@@ -14,14 +14,12 @@ def match(uri):
 
 
 class Sender(Direction):
-    def __init__(self, uri, is_destward: bool = True):
-        # uri is passed to each Sender so it can extract authentication details or
-        # similar. All we're going to do is make sure it's a folder that exists.
-        folder = os.path.expanduser(uri)
-        precondition(os.path.isdir(folder), "Folder %s must exist." % folder)
+    def __init__(self, is_destward: bool = True):
         Direction.__init__(self, is_destward)
 
     async def send(self, payload, folder, id=None, *args):
+        folder = os.path.expanduser(folder)
+        precondition(os.path.isdir(folder), "Folder %s must exist." % folder)
         if isinstance(payload, str):
             payload = payload.encode('utf-8')
         if id is None:
