@@ -1,0 +1,44 @@
+{
+  "@id": "0ea3a546-d397-4743-901a-0d39ba988b32",
+  "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/response",
+  "~thread": {
+    "thid": "8c41f760-6cf5-4921-a37e-0a9ad49edc0f",
+    "sender_order": 0,
+    "received_orders": {}
+  },
+  "connection~sig": {
+    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/signature/1.0/ed25519Sha512_single",
+    "signature": "HOrQVuGWNLxeaBtvTwBvKDUwprZtQ38gVK6vv3yhaClZlDmcoRGuxQqrvYheTt3sChgyfNinOGLLVpldcmerDA==",
+    "sig_data": "AAAAAFy3rgh7IkRJRCI6ICI1WWM5Q1RqOWhINVRyQ1N3MjlpQ0xVIiwgIkRJRERvYyI6IHsiQGNvbnRleHQiOiAiaHR0cHM6Ly93M2lkLm9yZy9kaWQvdjEiLCAiaWQiOiAiZGlkOnNvdjo1WWM5Q1RqOWhINVRyQ1N3MjlpQ0xVIiwgInB1YmxpY0tleSI6IFt7ImlkIjogImRpZDpzb3Y6NVljOUNUajloSDVUckNTdzI5aUNMVSMxIiwgInR5cGUiOiAiRWQyNTUxOVZlcmlmaWNhdGlvbktleTIwMTgiLCAiY29udHJvbGxlciI6ICJkaWQ6c292OjVZYzlDVGo5aEg1VHJDU3cyOWlDTFUiLCAicHVibGljS2V5QmFzZTU4IjogIjNVZzZ1N1pBWFRWY2QyNVVzRUVVUTNWMjdtaG8zYkxzaFZvd2JDZjljSG1MIn1dLCAiYXV0aGVudGljYXRpb24iOiBbeyJ0eXBlIjogIkVkMjU1MTlTaWduYXR1cmVBdXRoZW50aWNhdGlvbjIwMTgiLCAicHVibGljS2V5IjogImRpZDpzb3Y6NVljOUNUajloSDVUckNTdzI5aUNMVSMxIn1dLCAic2VydmljZSI6IFt7ImlkIjogImRpZDpzb3Y6NVljOUNUajloSDVUckNTdzI5aUNMVTtpbmR5IiwgInR5cGUiOiAiSW5keUFnZW50IiwgInJlY2lwaWVudEtleXMiOiBbIjNVZzZ1N1pBWFRWY2QyNVVzRUVVUTNWMjdtaG8zYkxzaFZvd2JDZjljSG1MIl0sICJzZXJ2aWNlRW5kcG9pbnQiOiAiaHR0cHM6Ly9hZ2VudGJvb2sudm9ueC5pbzoxMDAwMCJ9XX19",
+    "signer": "He5V382LurM9gCE9sstxciv881vLRw2tH8xdqk1ebTEV"
+  },
+  "connection": {
+    "DID": "5Yc9CTj9hH5TrCSw29iCLU",
+    "DIDDoc": {
+      "@context": "https://w3id.org/did/v1",
+      "id": "did:sov:5Yc9CTj9hH5TrCSw29iCLU",
+      "publicKey": [
+        {
+          "id": "did:sov:5Yc9CTj9hH5TrCSw29iCLU#1",
+          "type": "Ed25519VerificationKey2018",
+          "controller": "did:sov:5Yc9CTj9hH5TrCSw29iCLU",
+          "publicKeyBase58": "3Ug6u7ZAXTVcd25UsEEUQ3V27mho3bLshVowbCf9cHmL"
+        }
+      ],
+      "authentication": [
+        {
+          "type": "Ed25519SignatureAuthentication2018",
+          "publicKey": "did:sov:5Yc9CTj9hH5TrCSw29iCLU#1"
+        }
+      ],
+      "service": [
+        {
+          "id": "did:sov:5Yc9CTj9hH5TrCSw29iCLU;indy",
+          "type": "IndyAgent",
+          "recipientKeys": ["3Ug6u7ZAXTVcd25UsEEUQ3V27mho3bLshVowbCf9cHmL"],
+          "serviceEndpoint": "https://agentbook.vonx.io:10000"
+        }
+      ]
+    }
+  }
+}

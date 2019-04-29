@@ -1,5 +1,6 @@
 import os
 import pytest
+import random
 import tempfile
 
 import indy
@@ -33,7 +34,8 @@ async def fake_agent(scratch_space):
     class FakeAgent:
         def __init__(self):
             self.trans = ram_transport.RamTransport("test")
-            self.wallet_config = '{"id": "wallet", "storage_config": {"path": "%s"}}' % scratch_space.name
+            wallet_id = 'wallet' + str(random.randint(100000,999999))
+            self.wallet_config = '{"id": "' + wallet_id + '", "storage_config": {"path": "%s"}}' % scratch_space.name
             self.wallet_credentials = '{"key": "pickle"}'
             self.endpoint = "ram://test"
         async def prep(self):
@@ -61,6 +63,7 @@ async def fake_agent(scratch_space):
     fa = FakeAgent()
     await fa.prep()
     yield fa
+    await indy.wallet.close_wallet(fa.wallet_handle)
 
 @pytest.mark.asyncio
 async def test_invitation_with_key_and_did_endpoint_handled(load_json, fake_agent):
