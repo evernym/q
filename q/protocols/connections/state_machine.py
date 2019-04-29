@@ -7,11 +7,13 @@ RECEIVE_ERROR_EVENT = SEND_ERROR_EVENT = RECEIVE_ACK_EVENT = SEND_ACK_EVENT = RE
 from .. import state_machine
 
 # Make string arrays for all the numeric constants above
+# TODO: Better keep lists for event names and state names and pass those lists rather than using globals
 STATE_NAMES, EVENT_NAMES = state_machine.configure_constants(globals())
 
 CONNECTIONS_PROTOCOL_NAME = "connections"
 
 
+# TODO: Following logic is supported by transitions library. Should be replaced.
 def handle_common_event(state_machine, event):
     handled = False
     if event == SEND_ERROR_EVENT:
@@ -46,6 +48,7 @@ class Inviter(state_machine.StateMachineBase):
         else:
             if not handle_common_event(self, event):
                 self.raise_anomaly(event)
+
 
 class Invitee(state_machine.StateMachineBase):
     def __init__(self, pre_hook=None, post_hook=None, error_hook=None):

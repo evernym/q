@@ -37,6 +37,7 @@ from .. import state_machine
 
 STATE_NAMES, EVENT_NAMES = state_machine.configure_constants(globals())
 
+
 class EmployeeStateMachine(state_machine.StateMachineBase):
     def __init__(self, pre=None, post=None, err=None):
         super().__init__("order_food/1.0", 'employee', STATE_NAMES, EVENT_NAMES, NULL_STATE, pre, post, err)
@@ -56,6 +57,7 @@ class EmployeeStateMachine(state_machine.StateMachineBase):
             self.transition_to(DONE_STATE, event)
         else:
             self.raise_anomaly(event)
+
 
 class CustomerStateMachine(state_machine.StateMachineBase):
     def __init__(self, pre=None, post=None, err=None):

@@ -2,27 +2,40 @@ from .exceptions import ProtocolAnomaly
 
 
 def configure_constants(g):
+    """
+    Assign unique integer value to each state name constant and event name constant.
+    Values of state constants and event constants are not mutually exclusive.
+    :param g: The dictionary to look for state names and event names
+    :return: Returns 2 lists, for state names and event names
+    """
     sn = []
     en = []
     for key in g:
-        if key[0] == '_': continue
-        value = g[key]
-        if isinstance(value, int):
-            if key.endswith('_STATE'):
-                g[key] = len(sn)
-                sn.append(key.replace('_STATE', '').lower())
-            elif key.endswith('_EVENT'):
-                g[key] = len(en)
-                en.append(key.replace('_EVENT', '').lower())
+        if key[0] != '_':
+            value = g[key]
+            if isinstance(value, int):
+                if key.endswith('_STATE'):
+                    g[key] = len(sn)
+                    sn.append(key.replace('_STATE', '').lower())
+                elif key.endswith('_EVENT'):
+                    g[key] = len(en)
+                    en.append(key.replace('_EVENT', '').lower())
     return sn, en
 
 
 def _call_hook(hook, state, event, default_value=None):
+    # TODO: Move it to StateMachineBase
+    # TODO: Check if `hook` is a function or better move that check to `__init__`
+    """
+    Call `hook` if `hook` is not None else return `default_value`
+    """
     if hook:
         return hook(state, event)
     return default_value
 
 
+# TODO: The following logic can be declaratively achieve using transitions library.
+#  Transitions can be constrained from a list of sources to a destination, pre/post hooks,
 class StateMachineBase:
     def __init__(self, protocol, role, state_names, event_names, state, pre_hook=None, post_hook=None, error_hook=None):
         self._protocol = protocol
@@ -45,7 +58,7 @@ class StateMachineBase:
     def name_for_state(self, state=None):
         if state is None:
             state = self._state
-        return self._state_names[state] if (state >= 0 and state < len(self._state_names)) else str(state)
+        return self._state_names[state] if (0 <= state < len(self._state_names)) else str(state)
 
     def state_for_name(self, name):
         if name is None:
@@ -53,7 +66,7 @@ class StateMachineBase:
         return self._state_names.index(name)
 
     def name_for_event(self, event):
-        return self._event_names[event] if (event >= 0 and event < len(self._event_names)) else str(event)
+        return self._event_names[event] if (0 <= event < len(self._event_names)) else str(event)
 
     def event_for_name(self, name):
         return self._event_names.index(name)

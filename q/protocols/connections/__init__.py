@@ -19,6 +19,7 @@ SUPPORTED = [
     (CONNECTIONS_PROTOCOL_NAME, [INVITATION_MSG_TYPE, REQUEST_MSG_TYPE, RESPONSE_MSG_TYPE], ['inviter', 'invitee'])
 ]
 
+
 def message_type_to_event(mt):
     if compare_identifiers(mt, INVITATION_MSG_TYPE) == 0:
         return RECEIVE_INVITATION_EVENT
@@ -30,6 +31,7 @@ def message_type_to_event(mt):
         return RECEIVE_ACK_EVENT
     if compare_identifiers(mt, "problem_report") == 0:
         return RECEIVE_ERROR_EVENT
+
 
 async def handle(wc, parsed_type, agent):
     try:
@@ -71,6 +73,7 @@ async def handle(wc, parsed_type, agent):
             assert "Unhandled message type %s" % mt and False
     except Exception as e:
         await agent.trans.send(problem_report(wc, str(e)))
+
 
 async def handle_request(wc, parsed_type, agent):
     pass
