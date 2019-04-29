@@ -12,8 +12,8 @@ async def test_smtp_send():
         # patched.return_value = the mock that's returned from the constructor
         # of the class.
         mock = patched.return_value
-        sender = smtp_sender.Sender(smtp_sender.EXAMPLE)
-        await sender.send(b'hello')
+        sender = smtp_sender.Sender()
+        await sender.send(b'hello', smtp_sender.EXAMPLES)
         mock.starttls.assert_called_once()
         mock.login.assert_called_once()
         mock.sendmail.assert_called_once()

@@ -2,13 +2,6 @@
 A pluggable relay that lets you translate any agent transport into
 any different transport, for arbitrary testing scenarios.
 """
-if __name__ == '__main__':
-    import sys
-    print("You can't run a script from inside a python package without -m switch.\n" +
-        "See https://www.python.org/dev/peps/pep-0366/. Run bin/<this script name> instead.")
-    sys.exit(1)
-
-
 import argparse
 import logging
 import asyncio
@@ -23,8 +16,10 @@ async def relay(src, dests):
         if not data:
             data = mwc.plaintext
         if data:
-            for dest in dests:
-                await dest.send(data)
+            for pair in dests:
+                uri = pair[0]
+                obj = pair[1]
+                await obj.send(data, uri)
         else:
             logging.info('No useful data from message.')
         return mwc
@@ -44,7 +39,7 @@ async def main(argv, interrupter=None):
         args = parser.parse_args(argv)
         src = transports.load(args.src, transports.RECEIVERS)
         try:
-            dests = [transports.load(x, transports.SENDERS) for x in args.dest]
+            dests = [(x, transports.load(x, transports.SENDERS)) for x in args.dest]
             logging.debug('Relaying from %s to %s' % (args.src, args.dest))
             while True:
                 msg = await relay(src, dests)
@@ -60,3 +55,9 @@ async def main(argv, interrupter=None):
                 await stopper()
     except KeyboardInterrupt:
         print('')
+
+if __name__ == '__main__':
+    import sys
+    print("You can't run a script from inside a python package without -m switch.\n" +
+        "See https://www.python.org/dev/peps/pep-0366/. Run bin/<this script name> instead.")
+    sys.exit(1)

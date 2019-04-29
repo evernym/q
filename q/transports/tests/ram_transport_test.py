@@ -8,7 +8,7 @@ def t():
 
 @pytest.mark.asyncio
 async def test_ram_send(t):
-    assert await t.send("payload")
+    assert await t.send("payload", 'x')
     assert t.queue.items
 
 @pytest.mark.asyncio

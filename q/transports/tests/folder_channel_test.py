@@ -3,7 +3,7 @@ import pytest
 import tempfile
 import aiofiles
 
-from ..file_transport import FileTransport as FT
+from ..folder_channel import Channel
 
 
 @pytest.fixture()
@@ -15,28 +15,32 @@ def scratch_space():
 
 @pytest.mark.asyncio
 async def test_receive_from_empty(scratch_space):
-    x = FT(scratch_space.name)
+    x = Channel(scratch_space.name)
     assert not bool(await x.receive())
 
 
 @pytest.mark.asyncio
 async def test_receive_from_full(scratch_space):
-    x = FT(scratch_space.name)
+    x = Channel(scratch_space.name)
     # Write something to the folder I'm about to read from.
-    fpath = os.path.join(x.read_dir, 'x.msg')
+    fpath = os.path.join(x.folder, 'x.in')
     async with aiofiles.open(fpath, 'wt') as f:
         await f.write('hello')
-    # First attempt to read should yield what I just wrote.
-    assert await x.receive()
-    # Next fetch should yield None.
+    # First attempt to read shouldn't yield what I just wrote,
+    # because this object's perspective on the channel wants
+    # a different file extension for receiving vs. sending.
     assert not await x.receive()
+    y = Channel(scratch_space.name, is_destward=False)
+    assert await y.receive()
+    # Next fetch should yield None.
+    assert not await y.receive()
 
 
 @pytest.mark.asyncio
 async def test_request_response(scratch_space):
-    requester = FT(scratch_space.name)
-    responder = FT(scratch_space.name, folder_is_destward=False)
-    id = await requester.send('ping')
+    requester = Channel(scratch_space.name)
+    responder = Channel(scratch_space.name, is_destward=False)
+    id = await requester.sender.send('ping', responder.folder)
     # The requester should not see a response yet.
     assert not (await requester.peek(id))
     # If the responder sends a response to an unrelated id,
@@ -51,10 +55,10 @@ async def test_request_response(scratch_space):
 
 @pytest.mark.asyncio
 async def test_send(scratch_space):
-    requester = FT(scratch_space.name)
+    requester = Channel(scratch_space.name)
     await requester.send('hello')
     assert not (await requester.receive())
-    responder = FT(scratch_space.name, folder_is_destward=False)
+    responder = Channel(scratch_space.name, is_destward=False)
     wc = await responder.receive()
     assert 'hello' == wc.plaintext
 

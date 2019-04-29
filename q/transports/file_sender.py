@@ -1,11 +1,30 @@
-import re
+import os
+import sys
 
-from . import file_transport
+from . import filesys_match
 
-PAT = re.compile('.*')
-EXAMPLE = '~/myfolder'
+EXAMPLES = 'stdout|~/myfile.dat'
 
 
-class Sender(file_transport.FileTransport):
-    def __init__(self, folder):
-        super().__init__(folder, True)
+def match(uri):
+    return filesys_match.match_uri_to_filesys(uri, os.path.isfile, 'stdout')
+
+
+class Sender:
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        pass
+
+    async def send(self, payload, fname, *ignored):
+        if isinstance(payload, str):
+            payload = payload.encode('utf-8')
+        if fname.lower() == 'stdout':
+            sys.stdout.write(fname)
+            sys.stdout.flush()
+        else:
+            with open(fname, 'ab') as f:
+                f.write(payload)
+                f.flush()

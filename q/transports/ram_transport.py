@@ -40,8 +40,9 @@ class RamTransport:
             self.queue = Queue(name)
             with _all_lock:
                 _all[name] = weakref.ref(self.queue)
+        self.endpoint = 'ram://' + name
 
-    async def send(self, payload):
+    async def send(self, payload, endpoint):
         return await self.queue.send(payload)
 
     async def peek(self, filter=None):

@@ -1,17 +1,33 @@
 import aiohttp
 import re
 
-PAT = re.compile('https?://.+$')
-EXAMPLE = 'https://x.com/abc'
+EXAMPLES = 'https://user:pass@x.com/abc'
+_PAT = re.compile('https?://.+$')
+_BASIC_AUTH_PAT = re.compile('https?://(?:([^/:]+):([^/@]*)@)?.+$')
+
+
+def match(uri):
+    return bool(_PAT.match(uri))
+
+
+def strip_basic_auth_from_uri(uri):
+    # uri is passed to each Sender so it can extract authentication details or
+    # similar.
+    m = _BASIC_AUTH_PAT.match(uri)
+    if m:
+        return m.group(1), m.group(2), uri[:m.start(1)] + uri[m.end(2):]
+    return None, None, uri
 
 
 class Sender:
-    def __init__(self, endpoint):
-        self.endpoint = endpoint
-
-    async def send(self, payload, *args):
-        async with aiohttp.ClientSession() as session:
-            async with session.post(self.endpoint, data=payload, headers={
+    async def send(self, payload, uri, *args):
+        user, password, rest = strip_basic_auth_from_uri(uri)
+        if user or password:
+            auth = aiohttp.BasicAuth(login=user, password=password)
+        else:
+            auth = None
+        async with aiohttp.ClientSession(auth=auth) as session:
+            async with session.post(rest, data=payload, headers={
                     'content-type': 'application/ssi-agent-wire'}) as resp:
                 await resp.text()
                 if resp.status >= 400:

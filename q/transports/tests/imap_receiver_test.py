@@ -86,13 +86,11 @@ def test_bytes_to_mwc_jwt_attached(urec):
     raw = _get_sample_email_tweaked('dw_attached', 'tiny.dw', 'tiny.jwt')
     wc = urec.bytes_to_mwc(raw)
     assert bool(wc.ciphertext)
-    assert wc.tc.trust_for(CONFIDENTIALITY | INTEGRITY) == True
 
 
 def test_bytes_to_mwc_dw_attached():
     wc = _get_mwc_from_sample_email('dw_attached')
     assert bool(wc.ciphertext)
-    assert wc.tc.trust_for(CONFIDENTIALITY | INTEGRITY) == True
 
 
 def test_bytes_to_mwc_dp_attached():
