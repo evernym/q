@@ -80,6 +80,14 @@ class NewStateMachineBase:
         self._call_hook(self._error_hook, state, msg)
 
     def add_transition(self, event, initial_states, resulting_state):
+        """
+        Declare a transition that is valid only if the current state is one of `initial_states`.
+        The state after the transition will be `resulting_state`.
+        :param event:
+        :param initial_states: Can be a string if single state or a list if many states. Can accept wildcard "*" for all possible states.
+        :param resulting_state:
+        :return:
+        """
         event = self.name_for_event(event)
         initial_states = [self.name_for_state(s) for s in initial_states]
         resulting_state = self.name_for_state(resulting_state)
@@ -88,6 +96,12 @@ class NewStateMachineBase:
 
     def transition_to(self, state, event):
         # Question: Why is state necessary as an arg? The event should decide what the resulting state.
+        """
+        Handle event and possibly transition to a new state. Can raise an exception if event is not known
+        :param state:
+        :param event:
+        :return:
+        """
         # Ask permission before transitioning
         # if not _call_hook(self._pre_hook, state, event, True):
         #     return
