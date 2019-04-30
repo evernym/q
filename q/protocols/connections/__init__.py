@@ -88,7 +88,8 @@ async def handle_request(wc, parsed_type, agent):
             await indy.did.store_their_did(agent.wallet_handle, json.dumps({"did": did, "verkey": verkey}))
             did, verkey = await indy.did.create_and_store_my_did(agent.wallet_handle, '{}')
             data = {"my_did": did, "my_verkey": verkey, "state_machine": None}
-            msg = start_msg(RESPONSE_MSG_TYPE, thid=wc.id, in_time=wc.in_time)
+            type_ = CONNECTIONS_PROTOCOL_NAME + '/' + RESPONSE_MSG_TYPE
+            msg = start_msg(type_, thid=wc.id, in_time=wc.in_time)
             msg["label"] = "q"
             msg["connection"] = {
                 # TODO: change key names to lower case (HIPE was updated after Feb 2019 connectathon)
@@ -145,7 +146,8 @@ async def handle_invitation(wc, parsed_type, agent):
     if keys and endpoint:
         did, verkey = await indy.did.create_and_store_my_did(agent.wallet_handle, '{}')
         data = {"my_did": did, "my_verkey": verkey, "state_machine": None}
-        msg = start_msg(REQUEST_MSG_TYPE, thid=wc.id, in_time=wc.in_time)
+        type_ = CONNECTIONS_PROTOCOL_NAME + '/' + REQUEST_MSG_TYPE
+        msg = start_msg(type_, thid=wc.id, in_time=wc.in_time)
         msg["label"] = "q"
         msg["connection"] = {
             "did": did,

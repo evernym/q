@@ -2,11 +2,12 @@ import os
 import pytest
 import random
 import tempfile
+import json
 
 import indy
 
 from .. import *
-from ....agents.base import norm_recipient_keys
+from ....agents.base import norm_recipient_keys, Agent
 from ....transports import ram_transport
 from ....protocols import parse_msg_type
 from ....mwc import MessageWithContext
@@ -45,26 +46,16 @@ async def fake_agent(scratch_space):
         async def prep(self):
             await indy.wallet.create_wallet(self.wallet_config, self.wallet_credentials)
             self.wallet_handle = await indy.wallet.open_wallet(self.wallet_config, self.wallet_credentials)
+            # Following seed is used to create key in invitation file
+            await indy.crypto.create_key(self.wallet_handle, '{"seed": "11111111111111111111111111111111"}')
 
         async def pack(self, msg, sender_key, to):
-            if isinstance(msg, dict):
-                msg = json.dumps(msg)
-            elif isinstance(msg, bytes):
-                msg = msg.decode('utf-8')
-            if not isinstance(to, list):
-                to = [to]
-            i = len(to) - 1
-            while i >= 0:
-                # Always anon-crypt to mediator
-                if i == 0 and len(to) > 1:
-                    sender = None
-                else:
-                    sender = sender_key
-                recipients = norm_recipient_keys(to[i])
-                msg = await indy.crypto.pack_message(self.wallet_handle, msg, recipients, sender)
-                msg = msg.decode('utf-8')
-                i -= 1
-            return msg
+            return await Agent._pack(self.wallet_handle, msg, sender_key, to)
+
+        async def unpack(self, msg):
+            if isinstance(msg, str):
+                msg = msg.encode()
+            return json.loads(await indy.crypto.unpack_message(self.wallet_handle, msg))
 
     fa = FakeAgent()
     await fa.prep()
@@ -104,4 +95,9 @@ async def test_invitation_with_key_and_url_endpoint_handled(invitation_with_key_
 
 @pytest.mark.asyncio
 async def test_connection_request(invitation_with_key_and_did_endpoint, fake_agent):
+    # Check that the agent did send a connection request
     wc = invitation_with_key_and_did_endpoint
+    request = await fake_agent.trans.receive()
+    unpacked = await fake_agent.unpack(request)
+    wc1 = MessageWithContext(unpacked['message'])
+    assert parse_msg_type(wc1.type).msg_type_name == REQUEST_MSG_TYPE

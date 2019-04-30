@@ -127,14 +127,19 @@ class Agent:
         return sig_block
 
     async def pack(self, msg, sender_key, to):
+        if self.wallet_handle is None:
+            await self.open_wallet()
+
+        return await self._pack(self.wallet_handle, msg, sender_key, to)
+
+    @staticmethod
+    async def _pack(wallet_handle, msg, sender_key, to):
         if isinstance(msg, dict):
             msg = json.dumps(msg)
         elif isinstance(msg, bytes):
             msg = msg.decode('utf-8')
         if not isinstance(to, list):
             to = [to]
-        if self.wallet_handle is None:
-            await self.open_wallet()
         i = len(to) - 1
         while i >= 0:
             # Always anon-crypt to mediator
@@ -143,7 +148,7 @@ class Agent:
             else:
                 sender = sender_key
             recipients = norm_recipient_keys(to[i])
-            msg = await indy.crypto.pack_message(self.wallet_handle, msg, recipients, sender)
+            msg = await indy.crypto.pack_message(wallet_handle, msg, recipients, sender)
             msg = msg.decode('utf-8')
             i -= 1
         return msg
