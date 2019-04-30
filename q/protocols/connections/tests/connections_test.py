@@ -14,6 +14,7 @@ from ....mwc import MessageWithContext
 _DATA_FILES_FOLDER = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                                    '../../../../messages/connections'))
 
+
 @pytest.fixture
 def load_json():
     def _load_json(which):
@@ -23,11 +24,13 @@ def load_json():
         return wc
     return _load_json
 
+
 @pytest.fixture
 def scratch_space():
     x = tempfile.TemporaryDirectory()
     yield x
     x.cleanup()
+
 
 @pytest.fixture
 async def fake_agent(scratch_space):
@@ -65,12 +68,14 @@ async def fake_agent(scratch_space):
     yield fa
     await indy.wallet.close_wallet(fa.wallet_handle)
 
+
 @pytest.mark.asyncio
 async def test_invitation_with_key_and_did_endpoint_handled(load_json, fake_agent):
     wc = load_json('invitation-with-key-and-did-endpoint')
     parsed_type = parse_msg_type("did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation")
     assert await handle(wc, parsed_type, fake_agent)
     assert wc.state_machine.state == REQUESTED_STATE
+
 
 @pytest.mark.asyncio
 async def test_invitation_with_key_and_url_endpoint_handled(load_json, fake_agent):

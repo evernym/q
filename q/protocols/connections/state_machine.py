@@ -64,8 +64,8 @@ class Invitee(state_machine.StateMachineBase):
             self.check_state_for_event(event, REQUESTED_STATE)
             self.transition_to(RESPONDED_STATE, event)
         elif event == SEND_ERROR_EVENT:
-            self.check_state_for_event(event, RESPONDED_STATE, COMPLETE_STATE)
-            self.transition_to(COMPLETE_STATE, event)
+            self.check_state_for_event(event, INVITED_STATE, RESPONDED_STATE, COMPLETE_STATE)
+            self.transition_to(NULL_STATE, event)
         elif event == SEND_ACK_EVENT:
             self.check_state_for_event(event, RESPONDED_STATE, COMPLETE_STATE)
             self.transition_to(COMPLETE_STATE, event)
