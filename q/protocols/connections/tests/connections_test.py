@@ -94,10 +94,16 @@ async def test_invitation_with_key_and_url_endpoint_handled(invitation_with_key_
 
 
 @pytest.mark.asyncio
-async def test_connection_request(invitation_with_key_and_did_endpoint, fake_agent):
-    # Check that the agent did send a connection request
-    wc = invitation_with_key_and_did_endpoint
+@pytest.fixture
+async def conn_request_with_key_and_did_endpoint(invitation_with_key_and_did_endpoint, fake_agent):
     request = await fake_agent.trans.receive()
     unpacked = await fake_agent.unpack(request)
+    return unpacked
+
+
+@pytest.mark.asyncio
+async def test_connection_request(conn_request_with_key_and_did_endpoint, fake_agent):
+    # Check that the agent did send a connection request
+    unpacked = conn_request_with_key_and_did_endpoint
     wc1 = MessageWithContext(unpacked['message'])
     assert parse_msg_type(wc1.type).msg_type_name == REQUEST_MSG_TYPE
