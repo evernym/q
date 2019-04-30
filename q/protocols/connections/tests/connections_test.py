@@ -81,7 +81,6 @@ async def invitation_with_key_and_did_endpoint(load_json, fake_agent):
     return wc
 
 
-
 @pytest.mark.asyncio
 @pytest.fixture
 async def invitation_with_key_and_url_endpoint(load_json, fake_agent):

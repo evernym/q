@@ -14,6 +14,7 @@ class Queue:
             _all[name] = self
 
     async def send(self, payload):
+        # Adds element to the end of queue
         with self.lock:
             self.items.append(payload)
             return True
@@ -24,9 +25,10 @@ class Queue:
                 return True
 
     async def receive(self, filter=None):
+        # Removes element from beginning of the queue
         with self.lock:
             if self.items:
-                return self.items.pop()
+                return self.items.pop(0)
 
 
 class RamTransport:

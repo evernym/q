@@ -6,12 +6,14 @@ import json
 def get_timestamp():
     return int(time.time())
 
+
 def _norm_timestamp(value):
     if isinstance(value, datetime.datetime):
         value = value.timestamp()
     elif value is None:
         value = 0
     return int(value)
+
 
 class Interaction:
     def __init__(self, thid, last_received_t=None, last_sent_t=None, data=None, db_fresh_t=None):

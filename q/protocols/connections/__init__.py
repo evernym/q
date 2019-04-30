@@ -67,7 +67,8 @@ async def handle(wc, parsed_type, agent):
             raise ProtocolAnomaly(wc.state_machine.protocol, wc.state_machine.role, wc.state_machine.state, msg)
 
         if compare_identifiers(mt, REQUEST_MSG_TYPE):
-            return False
+            await handle_request(wc, parsed_type, agent)
+            return True
         elif compare_identifiers(mt, RESPONSE_MSG_TYPE):
             return False
         else:
@@ -99,6 +100,7 @@ async def handle_request(wc, parsed_type, agent):
             wc.state_machine.handle(RECEIVE_CONN_REQ_EVENT)
             wc.interaction.data["state_machine"] = wc.state_machine.to_json()
             wc.interaction.data = data
+
 
 def get_first_verkey(did_doc):
     authns = did_doc.obj.get('authentication')
