@@ -77,20 +77,70 @@ async def handle(wc, parsed_type, agent):
 
 
 async def handle_request(wc, parsed_type, agent):
-    pass
+    data = wc.interaction.data
+    conn = wc.obj.get("connection")
+    if conn:
+        did = conn.get('did')
+        did_doc = DIDDoc.from_json(conn.get('did_doc', {}))
+        verkey = get_first_verkey(did_doc)
+        if verkey:
+            await indy.did.store_their_did(agent.wallet_handle, json.dumps({"did": did, "verkey": verkey}))
+            did, verkey = await indy.did.create_and_store_my_did(agent.wallet_handle, '{}')
+            data = {"my_did": did, "my_verkey": verkey, "state_machine": None}
+            msg = start_msg(RESPONSE_MSG_TYPE, thid=wc.id, in_time=wc.in_time)
+            msg["label"] = "q"
+            msg["connection"] = {
+                # TODO: change key names to lower case (HIPE was updated after Feb 2019 connectathon)
+                "DID": did,
+                "DIDDoc": str(DIDDoc.from_scratch(did, verkey, agent.endpoint))
+            }
+            msg = finish_msg(msg)
+            msg = await agent.pack(msg, verkey, verkey)
+            wc.state_machine.handle(RECEIVE_CONN_REQ_EVENT)
+            wc.interaction.data["state_machine"] = wc.state_machine.to_json()
+            wc.interaction.data = data
+
+def get_first_verkey(did_doc):
+    authns = did_doc.obj.get('authentication')
+    if authns:
+        keys = did_doc.obj.get('publicKey')
+        if keys:
+            for au in authns:
+                pubkey = au.get('publicKey')
+                if pubkey:
+                    for key in keys:
+                        if key.get('id') == pubkey:
+                            t = key.get("type")
+                            if t == "Ed25519VerificationKey2018":
+                                value = key.get('publicKeyBase58')
+                                if value:
+                                    return value
+
+
+async def handle_response(wc, parsed_type, agent):
+    data = wc.interaction.data
+    conn = wc.obj.get("connection")
+    if conn:
+        did = conn.get('did')
+        did_doc = DIDDoc.from_json(conn.get('did_doc', {}))
+        verkey = get_first_verkey(did_doc)
+        if verkey:
+            await indy.did.store_their_did(agent.wallet_handle, json.dumps({"did": did, "verkey": verkey}))
+            wc.state_machine.handle(RECEIVE_CONN_RESP_EVENT)
+            wc.interaction.data["state_machine"] = wc.state_machine.to_json()
+            wc.interaction.data = data
 
 
 async def handle_invitation(wc, parsed_type, agent):
     # Did we get the form of invitation that uses keys+endpoint?
+    event = SEND_CONN_REQ_EVENT
     keys = wc.obj.get('recipientKeys')
     endpoint = wc.obj.get('serviceEndpoint')
-    if keys is None and endpoint is None:
-        key = wc.obj.get('key')
+    if not keys and not endpoint:
+        # Try another variation of the invitation
+        keys = [wc.obj.get('key')]
         endpoint = wc.obj.get('endpoint')
-    else:
-        key = keys[0]
-    event = SEND_CONN_REQ_EVENT
-    if key and endpoint:
+    if keys and endpoint:
         did, verkey = await indy.did.create_and_store_my_did(agent.wallet_handle, '{}')
         data = {"my_did": did, "my_verkey": verkey, "state_machine": None}
         msg = start_msg(REQUEST_MSG_TYPE, thid=wc.id, in_time=wc.in_time)
@@ -100,11 +150,12 @@ async def handle_invitation(wc, parsed_type, agent):
             "did_doc": str(DIDDoc.from_scratch(did, verkey, agent.endpoint))
         }
         msg = finish_msg(msg)
-        msg = await agent.pack(msg, verkey, key)
+        msg = await agent.pack(msg, verkey, keys[0])
     else:
         did = wc.obj.get('did')
         msg = problem_report(wc, "Connecting with public DIDs isn't currently supported.")
         event = SEND_ERROR_EVENT
+        data = {}
     await agent.trans.send(msg, endpoint)
     # Update state machine to reflect what we did as we handled this message.
     wc.state_machine.handle(event)
