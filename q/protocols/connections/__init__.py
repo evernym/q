@@ -60,10 +60,11 @@ async def handle(wc, parsed_type, agent):
             return True
 
         if not wc.tc.trust_for(CONFIDENTIALITY | INTEGRITY):
-            raise ProtocolAnomaly("%s message must have %s and %s for protocol to be secure." % (
-                mt, LABELS[CONFIDENTIALITY], LABELS[INTEGRITY]))
+            msg = "%s message must have %s and %s for protocol to be secure." % (mt, LABELS[CONFIDENTIALITY], LABELS[INTEGRITY])
+            raise ProtocolAnomaly(wc.state_machine.protocol, wc.state_machine.role, wc.state_machine.state, msg)
         if not wc.interaction:
-            raise ProtocolAnomaly("%s message received without previous message in protocol." % mt)
+            msg = "%s message received without previous message in protocol." % mt
+            raise ProtocolAnomaly(wc.state_machine.protocol, wc.state_machine.role, wc.state_machine.state, msg)
 
         if compare_identifiers(mt, REQUEST_MSG_TYPE):
             return False
@@ -83,19 +84,23 @@ async def handle_invitation(wc, parsed_type, agent):
     # Did we get the form of invitation that uses keys+endpoint?
     keys = wc.obj.get('recipientKeys')
     endpoint = wc.obj.get('serviceEndpoint')
+    if keys is None and endpoint is None:
+        key = wc.obj.get('key')
+        endpoint = wc.obj.get('endpoint')
+    else:
+        key = keys[0]
     event = SEND_CONN_REQ_EVENT
-    if keys and endpoint:
+    if key and endpoint:
         did, verkey = await indy.did.create_and_store_my_did(agent.wallet_handle, '{}')
         data = {"my_did": did, "my_verkey": verkey, "state_machine": None}
         msg = start_msg(REQUEST_MSG_TYPE, thid=wc.id, in_time=wc.in_time)
         msg["label"] = "q"
         msg["connection"] = {
-            # TODO: change key names to lower case (HIPE was updated after Feb 2019 connectathon)
-            "DID": did,
-            "DIDDoc": str(DIDDoc.from_scratch(did, verkey, agent.endpoint))
+            "did": did,
+            "did_doc": str(DIDDoc.from_scratch(did, verkey, agent.endpoint))
         }
         msg = finish_msg(msg)
-        msg = await agent.pack(msg, verkey, keys[0])
+        msg = await agent.pack(msg, verkey, key)
     else:
         did = wc.obj.get('did')
         msg = problem_report(wc, "Connecting with public DIDs isn't currently supported.")

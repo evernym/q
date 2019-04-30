@@ -10,6 +10,7 @@ PROBLEM_REPORT_MSG_TYPE = "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/notification/1.0/
 _ID_PAT = re.compile(r'"@id"\s*:\s*"([^"]*)"')
 _THID_PAT = re.compile(r'"~thread"\s*:\s*{[^{}]*"thid"\s*:\s*"([^"]*)"')
 
+
 def start_msg(typ: str, thid: str = None, in_time: datetime.datetime = None):
     msg = {}
     msg['@type'] = typ
@@ -59,3 +60,34 @@ def problem_report(wc, explain, code: str = None, catalog: str = None):
             'catalog': catalog
         }
     return finish_msg(msg)
+
+
+class attribute_dict(dict):
+    """Dict with attribute based access to keys."""
+    marker = object()
+
+    def __init__(self, **kwargs):
+        super().__init__()
+        for key in kwargs:
+            self.__setitem__(key, kwargs[key])
+
+    def __setitem__(self, key, value):
+        if isinstance(value, dict) and not isinstance(value, attribute_dict):
+            value = attribute_dict(**value)
+        super(attribute_dict, self).__setitem__(key, value)
+
+    def __getitem__(self, key):
+        found = self.get(key, attribute_dict.marker)
+        if found is attribute_dict.marker:
+            found = attribute_dict()
+            super(attribute_dict, self).__setitem__(key, found)
+        return found
+
+    def copy(self):
+        return self.__copy__()
+
+    def __copy__(self):
+        return attribute_dict(**self)
+
+    __setattr__ = __setitem__
+    __getattr__ = __getitem__
