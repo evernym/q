@@ -183,6 +183,21 @@ def test_error_and_post_hook_are_called(e):
     assert post_hook.called
 
 
+def test_set_state_short_circuit(c):
+    c.handle(GREET_EVENT)
+    assert c.state == ORDERING_STATE
+    # GREET_EVENT is only valid for NULL_STATE
+    with pytest.raises(ProtocolAnomaly):
+        c.handle(GREET_EVENT)
+
+    c.set_state_by_short_circuit(NULL_STATE)
+    assert c.state == NULL_STATE
+
+    # GREET_EVENT works now
+    c.handle(GREET_EVENT)
+    assert c.state == ORDERING_STATE
+
+
 def test_constants(e):
     assert NULL_STATE != DONE_STATE
     assert STATE_NAMES[ORDERING_STATE] == 'ordering'

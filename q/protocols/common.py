@@ -12,9 +12,7 @@ _THID_PAT = re.compile(r'"~thread"\s*:\s*{[^{}]*"thid"\s*:\s*"([^"]*)"')
 
 
 def start_msg(typ: str, thid: str = None, in_time: datetime.datetime = None):
-    msg = {}
-    msg['@type'] = typ
-    msg['@id'] = str(uuid.uuid4())
+    msg = {'@type': typ, '@id': str(uuid.uuid4())}
     if thid:
         msg['~thread'] = {
             'thid': thid,

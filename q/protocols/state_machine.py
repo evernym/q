@@ -195,6 +195,7 @@ class StateMachineBase:
         return self._error_hooks
 
     def set_state_by_short_circuit(self, state: int):
+        self._machine.set_state(self.name_for_state(state))
         self._state = state
 
     def signal_error(self, state, msg):

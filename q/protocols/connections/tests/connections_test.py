@@ -66,6 +66,7 @@ async def fake_agent(scratch_space):
 @pytest.mark.asyncio
 @pytest.fixture
 async def invitation_with_key_and_did_endpoint(load_json, fake_agent):
+    # fake_agent is inviter
     wc = load_json('invitation-with-key-and-did-endpoint')
     parsed_type = parse_msg_type("did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation")
     assert await handle(wc, parsed_type, fake_agent)
@@ -75,6 +76,7 @@ async def invitation_with_key_and_did_endpoint(load_json, fake_agent):
 @pytest.mark.asyncio
 @pytest.fixture
 async def invitation_with_key_and_url_endpoint(load_json, fake_agent):
+    # fake_agent is inviter
     wc = load_json('invitation-with-key-and-url-endpoint')
     parsed_type = parse_msg_type("did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation")
     assert await handle(wc, parsed_type, fake_agent)
@@ -96,14 +98,33 @@ async def test_invitation_with_key_and_url_endpoint_handled(invitation_with_key_
 @pytest.mark.asyncio
 @pytest.fixture
 async def conn_request_with_key_and_did_endpoint(invitation_with_key_and_did_endpoint, fake_agent):
+    # fake_agent is inviter
     request = await fake_agent.trans.receive()
     unpacked = await fake_agent.unpack(request)
     return unpacked
 
 
 @pytest.mark.asyncio
-async def test_connection_request(conn_request_with_key_and_did_endpoint, fake_agent):
-    # Check that the agent did send a connection request
+async def test_connection_request(invitation_with_key_and_did_endpoint, conn_request_with_key_and_did_endpoint):
+    # fake_agent is inviter
+    # Check that the invitee agent did send a connection request
     unpacked = conn_request_with_key_and_did_endpoint
     wc1 = MessageWithContext(unpacked['message'])
     assert parse_msg_type(wc1.type).msg_type_name == REQUEST_MSG_TYPE
+
+
+@pytest.mark.asyncio
+async def test_connection_resp(invitation_with_key_and_did_endpoint, conn_request_with_key_and_did_endpoint, fake_agent):
+    wc = invitation_with_key_and_did_endpoint
+    unpacked = conn_request_with_key_and_did_endpoint
+    wc1 = MessageWithContext(unpacked['message'])
+    conn = wc1.obj.get("connection")
+    (did, verkey, packed_msg) = await make_conn_resp(conn, fake_agent, wc1.id, wc1.in_time)
+    unpacked = await fake_agent.unpack(packed_msg)
+    wc2 = MessageWithContext(unpacked['message'])
+    assert parse_msg_type(wc2.type).msg_type_name == RESPONSE_MSG_TYPE
+    wc2.interaction = wc.interaction
+    wc2.state_machine = wc.state_machine
+    await handle_response(wc2, fake_agent)
+    assert wc2.state_machine.state == RESPONDED_STATE
+
