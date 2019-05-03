@@ -6,6 +6,7 @@ import json
 def get_timestamp():
     return int(time.time())
 
+
 def _norm_timestamp(value):
     if isinstance(value, datetime.datetime):
         value = value.timestamp()
@@ -13,7 +14,11 @@ def _norm_timestamp(value):
         value = 0
     return int(value)
 
+
 class Interaction:
+    """
+    Abstraction for message threading. Each `Interaction` object represents a message thread
+    """
     def __init__(self, thid, last_received_t=None, last_sent_t=None, data=None, db_fresh_t=None):
         self.thid = thid
         self.last_received_t = last_received_t
@@ -68,6 +73,7 @@ class Interaction:
     def from_row(cls, row):
         return Interaction(row[0], row[1], row[2], row[3], get_timestamp())
 
+
 class _TransCursor:
     def __init__(self, db):
         self.conn = db.conn
@@ -86,6 +92,7 @@ class _TransCursor:
 
 
 _CLEANUP_AFTER_SECS = 86400*30
+
 
 class Database:
     def __init__(self, path):

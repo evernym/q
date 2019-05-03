@@ -2,11 +2,12 @@ import os
 import pytest
 import random
 import tempfile
+import json
 
 import indy
 
 from .. import *
-from ....agents.base import norm_recipient_keys
+from ....agents.base import norm_recipient_keys, Agent
 from ....transports import ram_transport
 from ....protocols import parse_msg_type
 from ....mwc import MessageWithContext
@@ -41,28 +42,21 @@ async def fake_agent(scratch_space):
             self.wallet_config = '{"id": "' + wallet_id + '", "storage_config": {"path": "%s"}}' % scratch_space.name
             self.wallet_credentials = '{"key": "pickle"}'
             self.endpoint = "ram://test"
+
         async def prep(self):
             await indy.wallet.create_wallet(self.wallet_config, self.wallet_credentials)
             self.wallet_handle = await indy.wallet.open_wallet(self.wallet_config, self.wallet_credentials)
+            # Following seed is used to create key in invitation file
+            await indy.crypto.create_key(self.wallet_handle, '{"seed": "11111111111111111111111111111111"}')
+
         async def pack(self, msg, sender_key, to):
-            if isinstance(msg, dict):
-                msg = json.dumps(msg)
-            elif isinstance(msg, bytes):
-                msg = msg.decode('utf-8')
-            if not isinstance(to, list):
-                to = [to]
-            i = len(to) - 1
-            while i >= 0:
-                # Always anon-crypt to mediator
-                if i == 0 and len(to) > 1:
-                    sender = None
-                else:
-                    sender = sender_key
-                recipients = norm_recipient_keys(to[i])
-                msg = await indy.crypto.pack_message(self.wallet_handle, msg, recipients, sender)
-                msg = msg.decode('utf-8')
-                i -= 1
-            return msg
+            return await Agent._pack(self.wallet_handle, msg, sender_key, to)
+
+        async def unpack(self, msg):
+            if isinstance(msg, str):
+                msg = msg.encode()
+            return json.loads(await indy.crypto.unpack_message(self.wallet_handle, msg))
+
     fa = FakeAgent()
     await fa.prep()
     yield fa
@@ -70,16 +64,67 @@ async def fake_agent(scratch_space):
 
 
 @pytest.mark.asyncio
-async def test_invitation_with_key_and_did_endpoint_handled(load_json, fake_agent):
+@pytest.fixture
+async def invitation_with_key_and_did_endpoint(load_json, fake_agent):
+    # fake_agent is inviter
     wc = load_json('invitation-with-key-and-did-endpoint')
     parsed_type = parse_msg_type("did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation")
     assert await handle(wc, parsed_type, fake_agent)
+    return wc
+
+
+@pytest.mark.asyncio
+@pytest.fixture
+async def invitation_with_key_and_url_endpoint(load_json, fake_agent):
+    # fake_agent is inviter
+    wc = load_json('invitation-with-key-and-url-endpoint')
+    parsed_type = parse_msg_type("did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation")
+    assert await handle(wc, parsed_type, fake_agent)
+    return wc
+
+
+@pytest.mark.asyncio
+async def test_invitation_with_key_and_did_endpoint_handled(invitation_with_key_and_did_endpoint):
+    wc = invitation_with_key_and_did_endpoint
     assert wc.state_machine.state == REQUESTED_STATE
 
 
 @pytest.mark.asyncio
-async def test_invitation_with_key_and_url_endpoint_handled(load_json, fake_agent):
-    wc = load_json('invitation-with-key-and-url-endpoint')
-    parsed_type = parse_msg_type("did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation")
-    assert await handle(wc, parsed_type, fake_agent)
+async def test_invitation_with_key_and_url_endpoint_handled(invitation_with_key_and_url_endpoint):
+    wc = invitation_with_key_and_url_endpoint
     assert wc.state_machine.state == REQUESTED_STATE
+
+
+@pytest.mark.asyncio
+@pytest.fixture
+async def conn_request_with_key_and_did_endpoint(invitation_with_key_and_did_endpoint, fake_agent):
+    # fake_agent is inviter
+    request = await fake_agent.trans.receive()
+    unpacked = await fake_agent.unpack(request)
+    return unpacked
+
+
+@pytest.mark.asyncio
+async def test_connection_request(invitation_with_key_and_did_endpoint, conn_request_with_key_and_did_endpoint):
+    # fake_agent is inviter
+    # Check that the invitee agent did send a connection request
+    unpacked = conn_request_with_key_and_did_endpoint
+    wc1 = MessageWithContext(unpacked['message'])
+    assert parse_msg_type(wc1.type).msg_type_name == REQUEST_MSG_TYPE
+
+
+@pytest.mark.asyncio
+async def test_connection_resp(invitation_with_key_and_did_endpoint, conn_request_with_key_and_did_endpoint, fake_agent):
+    wc = invitation_with_key_and_did_endpoint
+    unpacked = conn_request_with_key_and_did_endpoint
+    wc1 = MessageWithContext(unpacked['message'])
+    conn = wc1.obj.get("connection")
+    (did, verkey, packed_msg) = await make_conn_resp(conn, fake_agent, wc1.id, wc1.in_time)
+    unpacked = await fake_agent.unpack(packed_msg)
+    wc2 = MessageWithContext(unpacked['message'])
+    assert parse_msg_type(wc2.type).msg_type_name == RESPONSE_MSG_TYPE
+    wc2.interaction = wc.interaction
+    wc2.state_machine = wc.state_machine
+    await handle_response(wc2, fake_agent)
+    assert wc2.state_machine.state == RESPONDED_STATE
+

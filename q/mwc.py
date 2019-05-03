@@ -11,6 +11,7 @@ _MSG_TYPE_URI_PAT = re.compile(r'(.*?)([a-z0-9._-]+)/(\d[^/]*)/([a-z0-9._-]+)$')
 
 MAX_MESSAGE_SIZE = 1024 * 1024 * 10
 
+
 def _check_size(data, tc: MessageTrustContext, force = False):
     if force:
         tc.undefine(SIZE_OK)

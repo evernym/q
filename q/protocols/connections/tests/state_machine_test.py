@@ -2,19 +2,24 @@ import pytest
 
 from ..state_machine import *
 
+
 @pytest.fixture
 def er():
     yield Inviter()
+
 
 @pytest.fixture
 def ee():
     yield Invitee()
 
+
 def test_invitee_starts_null(ee):
     assert ee.state == NULL_STATE
 
+
 def test_inviter_starts_null(er):
     assert er.state == NULL_STATE
+
 
 def test_invitee_normal_sequence(ee):
     ee.handle(RECEIVE_INVITATION_EVENT)
@@ -25,6 +30,7 @@ def test_invitee_normal_sequence(ee):
     assert ee.state == RESPONDED_STATE
     ee.handle(SEND_ACK_EVENT)
     assert ee.state == COMPLETE_STATE
+
 
 def test_inviter_normal_sequence(er):
     er.handle(SEND_INVITATION_EVENT)
