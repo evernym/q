@@ -12,6 +12,7 @@ SUPPORTED = [
     ('did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/trust_ping/1.0', [PING_MSG_TYPE, PING_RESPONSE_MSG_TYPE], ['requester', 'responder'])
 ]
 
+
 async def handle(wc, parsed_type, agent):
     try:
         if compare_identifiers(parsed_type.msg_type_name, PING_MSG_TYPE) == 0:

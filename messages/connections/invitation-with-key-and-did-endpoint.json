@@ -1,7 +1,7 @@
 {
     "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation",
     "label": "Alice",
-    "recipientKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"],
+    "recipientKeys": ["5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC"],
     "serviceEndpoint": "did:sov:A2wBhNYhMrjHiqZDTUYH7u;routeid",
-    "routingKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"]
+    "routingKeys": ["5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC"]
 }
