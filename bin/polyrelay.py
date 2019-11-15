@@ -8,6 +8,6 @@ from q.agents.polyrelay import main
 
 if __name__ == '__main__':
     try:
-        asyncio.run(main())
+        asyncio.run(main(sys.argv))
     except KeyboardInterrupt:
         print('')

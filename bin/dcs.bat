@@ -1,4 +1,4 @@
 @echo off
 title dcs
-python3 "%~dp0\..\q\agents\dcs.py" %*
+python3 "%~dp0\dcs.py" %*
 title 
