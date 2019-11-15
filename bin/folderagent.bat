@@ -1,4 +1,4 @@
 @echo off
 title folderagent
-python3 "%~dp0\..\q\agents\folderagent.py" %*
+python3 "%~dp0\folderagent.py" %*
 title 
